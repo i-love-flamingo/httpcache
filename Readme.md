@@ -1,6 +1,6 @@
 # HTTPCache module
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/i-love-flamingo/httpcache)](https://goreportcard.com/report/github.com/i-love-flamingo/httpcache) [![GoDoc](https://godoc.org/github.com/i-love-flamingo/httpcache?status.svg)](https://godoc.org/github.com/i-love-flamingo/httpcache) [![Build Status](https://travis-ci.org/i-love-flamingo/httpcache.svg)](https://travis-ci.org/i-love-flamingo/flamingo)
+[![Go Report Card](https://goreportcard.com/badge/github.com/i-love-flamingo/httpcache)](https://goreportcard.com/report/github.com/i-love-flamingo/httpcache) [![GoDoc](https://godoc.org/github.com/i-love-flamingo/httpcache?status.svg)](https://godoc.org/github.com/i-love-flamingo/httpcache) [![Build Status](https://travis-ci.org/i-love-flamingo/httpcache.svg)](https://travis-ci.org/i-love-flamingo/httpcache)
 
 The httpcache module provides an easy interface to cache simple http results in flamingo.
 
