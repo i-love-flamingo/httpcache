@@ -21,10 +21,8 @@ type (
 
 // Inject dependencies
 func (f *Frontend) Inject(
-	backend Backend,
 	logger flamingo.Logger,
 ) *Frontend {
-	f.backend = backend
 	f.logger = logger.WithField(flamingo.LogKeyCategory, "httpcache")
 
 	return f
@@ -93,7 +91,7 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 	}
 	entry := data.(Entry)
 
-	f.logger.WithContext(ctx).Debug("Store in Cache", key, entry)
+	f.logger.WithContext(ctx).Debugf("Store entry in Cache for key: %s", key)
 	_ = f.backend.Set(key, entry)
 
 	return entry, err

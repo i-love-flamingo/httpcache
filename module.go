@@ -40,15 +40,16 @@ httpcache: {
 		redis: {
 			host:               string | *"localhost"
 			port:               string | *"6379"
-			idleTimeOutSeconds: int | *60
-			maxIdle:            int | *8
+			idleTimeOutSeconds: int | float | *60
+			maxIdle:            int | float | *8
 		}
 	}
 
 	Memory :: {
 		backendType: "memory"
-		memory:
-			size: int | *200
+		memory: {
+			size: int | float | *200
+		}
 	}
 
 	Twolevel :: {
@@ -59,7 +60,7 @@ httpcache: {
 		}
 	}
 
-	Cache :: {backendType: string} & (Redis | Memory | Twolevel)
+	Cache :: Redis | Memory | Twolevel
 
 	frontendFactory: {
 		[string]: Cache
