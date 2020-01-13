@@ -28,6 +28,11 @@ func (f *Frontend) Inject(
 	return f
 }
 
+// SetBackend for usage
+func (f *Frontend) SetBackend(b Backend) {
+	f.backend = b
+}
+
 // Get the cached response if possible or perform a call to loader
 // The result of loader will be returned and cached
 func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entry, error) {

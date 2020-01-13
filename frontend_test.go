@@ -135,7 +135,8 @@ func TestFrontend_Get(t *testing.T) {
 				close(wait)
 			}
 
-			f := new(httpcache.Frontend).Inject(backend, new(flamingo.NullLogger))
+			f := new(httpcache.Frontend).Inject(new(flamingo.NullLogger))
+			f.SetBackend(backend)
 			got, err := f.Get(context.Background(), testKey, loader)
 
 			// wait for eventually async cache set to be finished
