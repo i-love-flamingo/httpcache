@@ -155,14 +155,13 @@ func (b *RedisBackend) Get(key string) (entry Entry, found bool) {
 
 	reply, err := conn.Do("GET", b.createPrefixedKey(key, valuePrefix))
 	if err != nil {
-		b.cacheMetrics.countMiss()
+		b.cacheMetrics.countError(fmt.Sprintf("%v", err))
 		b.logger.Error(fmt.Sprintf("Error getting key '%v': %v", key, err))
 		return Entry{}, false
 	}
 	if reply == nil {
 		b.cacheMetrics.countMiss()
-		b.cacheMetrics.countError("NilReply")
-		b.logger.Error(fmt.Sprintf("Returned nil for key: %v", key))
+		b.logger.Info(fmt.Sprintf("Missed key: %v", key))
 		return Entry{}, false
 	}
 
