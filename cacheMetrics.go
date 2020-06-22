@@ -43,13 +43,32 @@ func NewCacheMetrics(backendType string, frontendName string) Metrics {
 }
 
 func init() {
-	if err := opencensus.View("flamingo/httpcache/backend/hit", backendCacheHitCount, view.Count()); err != nil {
+	if err := opencensus.View(
+		"flamingo/httpcache/backend/hit",
+		backendCacheHitCount,
+		view.Count(),
+		backendTypeCacheKeyType,
+		frontendNameCacheKeyType,
+	); err != nil {
 		panic(err)
 	}
-	if err := opencensus.View("flamingo/httpcache/backend/miss", backendCacheMissCount, view.Count()); err != nil {
+	if err := opencensus.View(
+		"flamingo/httpcache/backend/miss",
+		backendCacheMissCount,
+		view.Count(),
+		backendTypeCacheKeyType,
+		frontendNameCacheKeyType,
+	); err != nil {
 		panic(err)
 	}
-	if err := opencensus.View("flamingo/httpcache/backend/error", backendCacheErrorCount, view.Count()); err != nil {
+	if err := opencensus.View(
+		"flamingo/httpcache/backend/error",
+		backendCacheErrorCount,
+		view.Count(),
+		backendTypeCacheKeyType,
+		frontendNameCacheKeyType,
+		backendCacheKeyErrorReason,
+	); err != nil {
 		panic(err)
 	}
 }
