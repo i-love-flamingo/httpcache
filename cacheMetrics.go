@@ -16,6 +16,7 @@ var (
 	backendCacheHitCount          = stats.Int64("flamingo/httpcache/backend/hit", "Count of cache-backend hits", stats.UnitDimensionless)
 	backendCacheMissCount         = stats.Int64("flamingo/httpcache/backend/miss", "Count of cache-backend misses", stats.UnitDimensionless)
 	backendCacheErrorCount        = stats.Int64("flamingo/httpcache/backend/error", "Count of cache-backend errors", stats.UnitDimensionless)
+	backendCacheEntriesCount      = stats.Int64("flamingo/httpcache/backend/entries", "Count of cache-backend entries", stats.UnitDimensionless)
 )
 
 type (
@@ -71,6 +72,15 @@ func init() {
 	); err != nil {
 		panic(err)
 	}
+	if err := opencensus.View(
+		"flamingo/httpcache/backend/entries",
+		backendCacheEntriesCount,
+		view.LastValue(),
+		backendTypeCacheKeyType,
+		frontendNameCacheKeyType,
+	); err != nil {
+		panic(err)
+	}
 }
 
 func (bi Metrics) countHit() {
@@ -102,4 +112,14 @@ func (bi Metrics) countError(reason string) {
 		tag.Upsert(backendCacheKeyErrorReason, reason),
 	)
 	stats.Record(ctx, backendCacheErrorCount.M(1))
+}
+
+func (bi Metrics) recordEntries(entries int64) {
+	ctx, _ := tag.New(
+		context.Background(),
+		tag.Upsert(opencensus.KeyArea, "cacheBackend"),
+		tag.Upsert(backendTypeCacheKeyType, bi.backendType),
+		tag.Upsert(frontendNameCacheKeyType, bi.frontendName),
+	)
+	stats.Record(ctx, backendCacheEntriesCount.M(entries))
 }
