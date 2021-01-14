@@ -105,6 +105,7 @@ func (m *MemoryBackend) Flush() error {
 
 func (m *MemoryBackend) lurker() {
 	for range time.Tick(lurkerPeriod) {
+		m.cacheMetrics.recordEntries(int64(m.pool.Len()))
 		for _, key := range m.pool.Keys() {
 			item, ok := m.pool.Peek(key)
 			if ok && item.(inMemoryCacheEntry).valid.Before(time.Now()) {
