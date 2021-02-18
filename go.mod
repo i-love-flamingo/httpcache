@@ -11,7 +11,6 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/containerd/continuity v0.0.0-20200107062522-0ec596719c75 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/fzipp/gocyclo v0.3.1 // indirect
 	github.com/go-test/deep v1.0.4
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6
 	github.com/gomodule/redigo v2.0.0+incompatible
