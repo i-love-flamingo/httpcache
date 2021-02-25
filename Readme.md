@@ -1,8 +1,10 @@
 # HTTPCache module
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/i-love-flamingo/httpcache)](https://goreportcard.com/report/github.com/i-love-flamingo/httpcache) [![GoDoc](https://godoc.org/github.com/i-love-flamingo/httpcache?status.svg)](https://godoc.org/github.com/i-love-flamingo/httpcache) [![Build Status](https://travis-ci.org/i-love-flamingo/httpcache.svg)](https://travis-ci.org/i-love-flamingo/httpcache)
+[![Go Report Card](https://goreportcard.com/badge/github.com/i-love-flamingo/httpcache)](https://goreportcard.com/report/github.com/i-love-flamingo/httpcache)
+[![GoDoc](https://godoc.org/github.com/i-love-flamingo/httpcache?status.svg)](https://godoc.org/github.com/i-love-flamingo/httpcache)
+[![Tests](https://github.com/i-love-flamingo/httpcache/workflows/Tests/badge.svg?branch=master)](https://github.com/i-love-flamingo/httpcache/actions?query=branch%3Amaster+workflow%3ATests)
 
-The httpcache module provides an easy interface to cache simple http results in flamingo.
+The httpcache module provides an easy interface to cache simple http results in Flamingo.
 
 The basic concept is, that there is a so called "cache frontend" - that offers an interface to cache certain types, 
 and a "cache backend" that takes care about storing(persisting) the cache entry.
@@ -14,7 +16,7 @@ A typical use case is, to cache responses from (slow) APIs that you need to call
 First define an injection to get a Frontend cache injected:
 
 ```go
-MyApiClient struct {
+type MyApiClient struct {
       Cache  *httpcache.Frontend  `inject:"myservice"`
 }
 ```
@@ -33,15 +35,15 @@ Currently there are the following backends available:
 
 Caches in memory - and therefore is a very fast cache.
 
-It is base on the LRU-Strategy witch drops least used entries. For this reason the cache will be no overcommit your memory and will automicly fit the need of your current traffic.
+It is base on the LRU-Strategy witch drops least used entries. For this reason the cache will be no over-commit your memory and will atomically fit the need of your current traffic.
 
 ### redis
 
 Is using [redis](https://redis.io/) as an shared inMemory cache.
 Since all cache-fetched has an overhead to the inMemoryBackend, the redis is a little slower.
-The benefit of redis is the shared storage an the high efficiency in reading and writing keys. especialy if you need scale fast horizonaly, it helps to keep your backend-systems healthy.
+The benefit of redis is the shared storage an the high efficiency in reading and writing keys. Especially if you need scale fast horizontally, it helps to keep your backend-systems healthy.
 
-Be ware of using redis (or any other shared cache backend) as an single backend, because of network latency. (have a look at the twoLevelBackend)
+Be ware of using redis (or any other shared cache backend) as a single backend, because of network latency. (have a look at the twoLevelBackend)
 
 
 ### twoLevel
