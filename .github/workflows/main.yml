@@ -48,7 +48,7 @@ jobs:
       - name: Go Lint
         run: go run golang.org/x/lint/golint -set_exit_status $(go list ./...)
       - name: Go Cyclo
-        run: go run github.com/fzipp/gocyclo/cmd/gocyclo -top 30 -ignore graphql .
+        run: go run github.com/fzipp/gocyclo/cmd/gocyclo -over 20 .
       - name: Spelling
         run: go run github.com/client9/misspell/cmd/misspell -error .
       - name: In effective assignments
