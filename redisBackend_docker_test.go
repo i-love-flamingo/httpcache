@@ -3,23 +3,26 @@
 package httpcache_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"testing"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"github.com/stretchr/testify/assert"
-
-	"github.com/gomodule/redigo/redis"
-	"github.com/ory/dockertest"
 
 	"flamingo.me/httpcache"
+
+	"github.com/gomodule/redigo/redis"
+	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 var (
-	dockerTestPool     *dockertest.Pool
-	dockerTestResource *dockertest.Resource
+	redisContainer testcontainers.Container
+	redisHost      string
+	redisPort      string
 )
 
 // TestMain set
@@ -32,32 +35,51 @@ func TestMain(m *testing.M) {
 
 // setup an redis docker-container for integration tests
 func setup() {
+	ctx := context.Background()
+	req := testcontainers.ContainerRequest{
+		Image:        "redis:latest",
+		ExposedPorts: []string{"6379/tcp"},
+		WaitingFor:   wait.ForLog("Ready to accept connections"),
+	}
 
 	var err error
-	dockerTestPool, err = dockertest.NewPool("")
+	redisContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
 	if err != nil {
-		log.Fatalf("Could not connect to docker: %s", err)
+		log.Fatal(err)
 	}
 
-	dockerTestResource, err = dockerTestPool.Run("redis", "4-alpine", nil)
+	port, err := redisContainer.MappedPort(ctx, "6379")
 	if err != nil {
-		log.Fatalf("Could not start resource: %s", err)
+		log.Fatal(err)
 	}
 
-	// test connection while setup - no need to run other tests, if connection setup fails in setup
-	connection, err := redis.Dial("tcp", fmt.Sprintf("%v:%v", "127.0.0.1", dockerTestResource.GetPort("6379/tcp")))
+	redisPort = port.Port()
+
+	redisHost, err = redisContainer.Host(ctx)
 	if err != nil {
-		log.Fatalf("Could not connect to redis-docker: %s", err)
+		log.Fatal(err)
 	}
-	err = redis.Conn.Close(connection)
+
+	address := fmt.Sprintf("%s:%s", redisHost, port.Port())
+	conn, err := redis.Dial("tcp", address)
 	if err != nil {
-		log.Fatalf("Could not close redis-docker: %s", err)
+		log.Fatal(err)
 	}
+
+	_, err = conn.Do("PING")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_ = conn.Close()
 }
 
 // teardown the redis docker-container
 func teardown() {
-	err := dockerTestPool.Purge(dockerTestResource)
+	err := redisContainer.Terminate(context.Background())
 	if err != nil {
 		log.Fatalf("Error purging docker resources: %s", err)
 	}
@@ -67,8 +89,8 @@ func Test_RunDefaultBackendTestCase_RedisBackend(t *testing.T) {
 	config := httpcache.RedisBackendConfig{
 		MaxIdle:            8,
 		IdleTimeOutSeconds: 30,
-		Host:               "127.0.0.1",
-		Port:               dockerTestResource.GetPort("6379/tcp"),
+		Host:               redisHost,
+		Port:               redisPort,
 	}
 	factory := httpcache.RedisBackendFactory{}
 	backend, err := factory.Inject(flamingo.NullLogger{}).SetConfig(config).SetFrontendName("testfrontend").Build()
