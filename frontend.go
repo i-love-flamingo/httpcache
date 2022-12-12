@@ -52,10 +52,13 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 
 		if entry.Meta.GraceTime.After(time.Now()) {
 			// Try to load the actual value in background
+			newContext := trace.NewContext(context.Background(), trace.FromContext(ctx))
 			go func() {
-				_, _ = f.load(context.Background(), key, loader)
+				_, _ = f.load(newContext, key, loader)
 			}()
+
 			f.logger.Debug("Gracetime! Serving from cache: ", key)
+
 			return entry, nil
 		}
 	}
@@ -70,7 +73,7 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 	defer span.End()
 
 	data, err := f.Do(key, func() (res interface{}, resultErr error) {
-		ctx, fetchRoutineSpan := trace.StartSpan(context.Background(), "flamingo/httpcache/fetchRoutine")
+		ctx, fetchRoutineSpan := trace.StartSpan(ctx, "flamingo/httpcache/fetchRoutine")
 		fetchRoutineSpan.Annotate(nil, key)
 		defer fetchRoutineSpan.End()
 
