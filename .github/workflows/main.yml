@@ -46,13 +46,13 @@ jobs:
           fmt=$(gofmt -l .)
           test -z $fmt || (echo "please run gofmt" ; echo $fmt ; exit 1)
       - name: Go Lint
-        run: go run golang.org/x/lint/golint -set_exit_status $(go list ./...)
+        run: go run golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 -set_exit_status $(go list ./...)
       - name: Go Cyclo
-        run: go run github.com/fzipp/gocyclo/cmd/gocyclo -over 20 .
+        run: go run github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0 -over 20 .
       - name: Spelling
-        run: go run github.com/client9/misspell/cmd/misspell -error .
+        run: go run github.com/client9/misspell/cmd/misspell@v0.3.4 -error .
       - name: In effective assignments
-        run: go run github.com/gordonklaus/ineffassign .
+        run: go run github.com/gordonklaus/ineffassign@v0.0.0-20220928193011-d2c82e48359b  .
       - name: Go Generate
         run: |
           go generate ./...
