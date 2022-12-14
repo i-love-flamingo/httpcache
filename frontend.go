@@ -23,7 +23,7 @@ type (
 func (f *Frontend) Inject(
 	logger flamingo.Logger,
 ) *Frontend {
-	f.logger = logger.WithField(flamingo.LogKeyCategory, "httpcache")
+	f.logger = logger
 
 	return f
 }
@@ -46,7 +46,9 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 
 	if entry, ok := f.backend.Get(key); ok {
 		if entry.Meta.LifeTime.After(time.Now()) {
-			f.logger.Debug("Serving from cache: ", key)
+			f.logger.WithContext(ctx).
+				WithField(flamingo.LogKeyCategory, "httpcache").
+				Debug("Serving from cache: ", key)
 			return entry, nil
 		}
 
@@ -57,12 +59,16 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 				_, _ = f.load(newContext, key, loader)
 			}()
 
-			f.logger.Debug("Gracetime! Serving from cache: ", key)
+			f.logger.WithContext(ctx).
+				WithField(flamingo.LogKeyCategory, "httpcache").
+				Debug("Gracetime! Serving from cache: ", key)
 
 			return entry, nil
 		}
 	}
-	f.logger.Debug("no cache entry for: ", key)
+	f.logger.WithContext(ctx).
+		WithField(flamingo.LogKeyCategory, "httpcache").
+		Debug("no cache entry for: ", key)
 
 	return f.load(ctx, key, loader)
 }
@@ -73,7 +79,10 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 	defer span.End()
 
 	data, err := f.Do(key, func() (res interface{}, resultErr error) {
-		ctx, fetchRoutineSpan := trace.StartSpan(ctx, "flamingo/httpcache/fetchRoutine")
+		ctx, fetchRoutineSpan := trace.StartSpan(
+			trace.NewContext(context.Background(), span),
+			"flamingo/httpcache/fetchRoutine",
+		)
 		fetchRoutineSpan.Annotate(nil, key)
 		defer fetchRoutineSpan.End()
 
@@ -99,7 +108,9 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 	}
 	entry := data.(Entry)
 
-	f.logger.WithContext(ctx).Debugf("Store entry in Cache for key: %s", key)
+	f.logger.WithContext(ctx).
+		WithField(flamingo.LogKeyCategory, "httpcache").
+		Debugf("Store entry in Cache for key: %s", key)
 	_ = f.backend.Set(key, entry)
 
 	return entry, err
