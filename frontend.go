@@ -54,9 +54,8 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 
 		if entry.Meta.GraceTime.After(time.Now()) {
 			// Try to load the actual value in background
-			newContext := trace.NewContext(context.Background(), trace.FromContext(ctx))
 			go func() {
-				_, _ = f.load(newContext, key, loader)
+				_, _ = f.load(ctx, key, loader)
 			}()
 
 			f.logger.WithContext(ctx).
@@ -74,13 +73,17 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 }
 
 func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Entry, error) {
-	ctx, span := trace.StartSpan(ctx, "flamingo/httpcache/load")
+	oldSpan := trace.FromContext(ctx)
+	newContext := trace.NewContext(context.Background(), oldSpan)
+
+	newContextWithSpan, span := trace.StartSpan(newContext, "flamingo/httpcache/load")
+
 	span.Annotate(nil, key)
 	defer span.End()
 
 	data, err := f.Do(key, func() (res interface{}, resultErr error) {
 		ctx, fetchRoutineSpan := trace.StartSpan(
-			trace.NewContext(context.Background(), span),
+			newContextWithSpan,
 			"flamingo/httpcache/fetchRoutine",
 		)
 		fetchRoutineSpan.Annotate(nil, key)
@@ -108,7 +111,7 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 	}
 	entry := data.(Entry)
 
-	f.logger.WithContext(ctx).
+	f.logger.WithContext(newContextWithSpan).
 		WithField(flamingo.LogKeyCategory, "httpcache").
 		Debugf("Store entry in Cache for key: %s", key)
 	_ = f.backend.Set(key, entry)
