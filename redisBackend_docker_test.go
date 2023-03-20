@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package httpcache_test
 
@@ -30,11 +29,12 @@ var (
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
+
 	teardown() // comment out, if you want to keep the docker-instance running for debugging
 	os.Exit(code)
 }
 
-// setup an redis docker-container for integration tests
+// setup the redis docker-container for integration tests
 func setup() {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{

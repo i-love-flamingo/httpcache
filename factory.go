@@ -8,6 +8,11 @@ import (
 	"flamingo.me/flamingo/v3/framework/config"
 )
 
+var ErrRedisConfig = errors.New("redis config not complete")
+var ErrMemoryConfig = errors.New("memory config not complete")
+var ErrTwoLevelConfig = errors.New("twolevel config not complete")
+var ErrInvalidBackend = errors.New("invalid backend supplied")
+
 type (
 	// FrontendFactory that can be used to build caches
 	FrontendFactory struct {
@@ -50,12 +55,15 @@ func (f *FrontendFactory) Inject(
 	f.inMemoryBackendFactory = inMemoryBackendFactory
 	f.redisBackendFactory = redisBackendFactory
 	f.twoLevelBackendFactory = twoLevelBackendFactory
+
 	if cfg != nil {
 		var cacheConfig FactoryConfig
+
 		err := cfg.CacheConfig.MapInto(&cacheConfig)
 		if err != nil {
 			panic(err)
 		}
+
 		f.cacheConfig = cacheConfig
 	}
 
@@ -69,6 +77,7 @@ func (f *FrontendFactory) BindConfiguredCaches(injector *dingo.Injector) error {
 		if err != nil {
 			return err
 		}
+
 		injector.Bind((*Frontend)(nil)).AnnotatedWith(cacheName).ToInstance(f.BuildWithBackend(backend))
 	}
 
@@ -79,6 +88,7 @@ func (f *FrontendFactory) BindConfiguredCaches(injector *dingo.Injector) error {
 func (f *FrontendFactory) BuildWithBackend(backend Backend) *Frontend {
 	frontend := f.provider()
 	frontend.backend = backend
+
 	return frontend
 }
 
@@ -87,29 +97,35 @@ func (f *FrontendFactory) BuildBackend(bc BackendConfig, frontendName string) (B
 	switch bc.BackendType {
 	case "redis":
 		if bc.Redis == nil {
-			return nil, errors.New("redis config not complete")
+			return nil, ErrRedisConfig
 		}
+
 		return f.NewRedisBackend(*bc.Redis, frontendName)
 	case "memory":
 		if bc.Memory == nil {
-			return nil, errors.New("memory config not complete")
+			return nil, ErrMemoryConfig
 		}
+
 		return f.NewMemoryBackend(*bc.Memory, frontendName)
 	case "twolevel":
 		if bc.Twolevel == nil || bc.Twolevel.First == nil || bc.Twolevel.Second == nil {
-			return nil, errors.New("twolevel config not complete")
+			return nil, ErrTwoLevelConfig
 		}
+
 		first, err := f.BuildBackend(*bc.Twolevel.First, frontendName)
 		if err != nil {
 			return nil, err
 		}
+
 		second, err := f.BuildBackend(*bc.Twolevel.Second, frontendName)
 		if err != nil {
 			return nil, err
 		}
+
 		return f.NewTwoLevel(TwoLevelBackendConfig{first, second})
 	}
-	return nil, fmt.Errorf("unknown backend type: %q", bc.BackendType)
+
+	return nil, fmt.Errorf("backend type %q error: %w", bc.BackendType, ErrInvalidBackend)
 }
 
 // NewMemoryBackend with given config and name

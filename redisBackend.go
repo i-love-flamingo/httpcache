@@ -15,7 +15,7 @@ import (
 )
 
 type (
-	// RedisBackend implements the the cache backend interface with a redis solution
+	// RedisBackend implements the cache backend interface with a redis solution
 	RedisBackend struct {
 		cacheMetrics Metrics
 		pool         *redis.Pool
@@ -69,9 +69,11 @@ func (f *RedisBackendFactory) Build() (Backend, error) {
 		if f.config.IdleTimeOutSeconds <= 0 {
 			return nil, errors.New("IdleTimeOut must be >0")
 		}
+
 		if f.config.Host == "" || f.config.Port == "" {
 			return nil, errors.New("host and Port must set")
 		}
+
 		f.pool = &redis.Pool{
 			MaxIdle:     f.config.MaxIdle,
 			IdleTimeout: time.Second * time.Duration(f.config.IdleTimeOutSeconds),
@@ -89,6 +91,7 @@ func (f *RedisBackendFactory) Build() (Backend, error) {
 			},
 		}
 	}
+
 	b := &RedisBackend{
 		pool:         f.pool,
 		logger:       f.logger.WithField(flamingo.LogKeyCategory, "Redis"),
@@ -142,13 +145,13 @@ func (b *RedisBackend) close() {
 	b.pool.Close()
 }
 
-// createPrefixedKey creates an redis-compatible key
+// createPrefixedKey creates a redis-compatible key
 func (b *RedisBackend) createPrefixedKey(key string, prefix string) string {
 	key = redisKeyRegex.ReplaceAllString(key, "-")
 	return fmt.Sprintf("%v%v", prefix, key)
 }
 
-// Get an cache key
+// Get a cache key
 func (b *RedisBackend) Get(key string) (entry Entry, found bool) {
 	conn := b.pool.Get()
 	defer conn.Close()
@@ -183,7 +186,7 @@ func (b *RedisBackend) Get(key string) (entry Entry, found bool) {
 	return redisEntry, true
 }
 
-// Set an cache key
+// Set a cache key
 func (b *RedisBackend) Set(key string, entry Entry) error {
 	conn := b.pool.Get()
 	defer conn.Close()
@@ -223,7 +226,7 @@ func (b *RedisBackend) Set(key string, entry Entry) error {
 	return conn.Flush()
 }
 
-// Purge an cache key
+// Purge a cache key
 func (b *RedisBackend) Purge(key string) error {
 	conn := b.pool.Get()
 	defer conn.Close()

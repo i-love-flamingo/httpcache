@@ -1,6 +1,7 @@
 package httpcache
 
 import (
+	"fmt"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
@@ -50,21 +51,24 @@ func (f *InMemoryBackendFactory) SetFrontendName(frontendName string) *InMemoryB
 func (f *InMemoryBackendFactory) Build() (Backend, error) {
 	cache, _ := lru.New2Q(f.config.Size)
 
-	m := &MemoryBackend{
+	memoryBackend := &MemoryBackend{
 		pool:         cache,
 		cacheMetrics: NewCacheMetrics("memory", f.frontendName),
 	}
-	go m.lurker()
-	return m, nil
+	go memoryBackend.lurker()
+
+	return memoryBackend, nil
 }
 
 // SetSize creates a new underlying cache of the given size
 func (m *MemoryBackend) SetSize(size int) error {
 	cache, err := lru.New2Q(size)
 	if err != nil {
-		return err
+		return fmt.Errorf("lru cant create new TwoQueueCache: %w", err)
 	}
+
 	m.pool = cache
+
 	return nil
 }
 
@@ -75,8 +79,10 @@ func (m *MemoryBackend) Get(key string) (Entry, bool) {
 		m.cacheMetrics.countMiss()
 		return Entry{}, false
 	}
+
 	m.cacheMetrics.countHit()
-	return entry.(inMemoryCacheEntry).data.(Entry), ok
+
+	return entry.(inMemoryCacheEntry).data.(Entry), true
 }
 
 // Set a cache entry with a key
@@ -106,6 +112,7 @@ func (m *MemoryBackend) Flush() error {
 func (m *MemoryBackend) lurker() {
 	for range time.Tick(lurkerPeriod) {
 		m.cacheMetrics.recordEntries(int64(m.pool.Len()))
+
 		for _, key := range m.pool.Keys() {
 			item, ok := m.pool.Peek(key)
 			if ok && item.(inMemoryCacheEntry).valid.Before(time.Now()) {

@@ -28,6 +28,8 @@ func init() {
 }
 
 func NewBackendTestCase(t *testing.T, backend httpcache.Backend, tagsInResult bool) *BackendTestCase {
+	t.Helper()
+
 	return &BackendTestCase{
 		t:            t,
 		backend:      backend,
@@ -46,7 +48,7 @@ func (tc *BackendTestCase) RunTests() {
 }
 
 func (tc *BackendTestCase) testSetGetPurge() {
-	entry := tc.buildEntry("ASDF", []string{"eins", "zwei"})
+	entry := tc.buildEntry("foobar", []string{"eins", "zwei"})
 	wantedEntry := entry
 
 	tc.setAndCompareEntry("ONE_KEY", entry, wantedEntry)
@@ -86,7 +88,13 @@ func (tc *BackendTestCase) testPurgeTags() {
 	tc.setEntry("THIRD_KEY", entryWithoutTags)
 
 	tagsToPurge := []string{"eins"}
-	err := tc.backend.(httpcache.TagSupporting).PurgeTags(tagsToPurge)
+
+	purge, ok := tc.backend.(httpcache.TagSupporting)
+	if !ok {
+		tc.t.Fatalf("backend doesnt implement TagSupporting interface")
+	}
+
+	err := purge.PurgeTags(tagsToPurge)
 	if err != nil {
 		tc.t.Fatalf("Purge Tags Failed: %v", err)
 	}
@@ -101,6 +109,7 @@ func (tc *BackendTestCase) setEntry(key string, entry httpcache.Entry) {
 	if err != nil {
 		tc.t.Fatalf("Failed to set Entry for key %v with error: %v", key, err)
 	}
+
 	tc.shouldExist(key)
 }
 
@@ -128,6 +137,7 @@ func (tc *BackendTestCase) shouldExist(key string) httpcache.Entry {
 	if !found {
 		tc.t.Fatalf("Failed to get Entry with key: %v", key)
 	}
+
 	return entry
 }
 

@@ -2,6 +2,7 @@ package httpcache
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
@@ -9,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 )
+
+var ErrInvalidEntry = errors.New("cache returned invalid entry type")
 
 type (
 	// Frontend caches and delivers HTTP responses
@@ -29,8 +32,10 @@ func (f *Frontend) Inject(
 }
 
 // SetBackend for usage
-func (f *Frontend) SetBackend(b Backend) {
+func (f *Frontend) SetBackend(b Backend) *Frontend {
 	f.backend = b
+
+	return f
 }
 
 // Get the cached response if possible or perform a call to loader
@@ -42,6 +47,7 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 
 	ctx, span := trace.StartSpan(ctx, "flamingo/httpcache/get")
 	span.Annotate(nil, key)
+
 	defer span.End()
 
 	if entry, ok := f.backend.Get(key); ok {
@@ -65,6 +71,7 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 			return entry, nil
 		}
 	}
+
 	f.logger.WithContext(ctx).
 		WithField(flamingo.LogKeyCategory, "httpcache").
 		Debug("no cache entry for: ", key)
@@ -79,6 +86,7 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 	newContextWithSpan, span := trace.StartSpan(newContext, "flamingo/httpcache/load")
 
 	span.Annotate(nil, key)
+
 	defer span.End()
 
 	data, err := f.Do(key, func() (res interface{}, resultErr error) {
@@ -107,14 +115,18 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 		return entry, err
 	})
 	if err != nil {
-		return Entry{}, err
+		return Entry{}, fmt.Errorf("http loader error: %w", err)
 	}
-	entry := data.(Entry)
+
+	entry, ok := data.(Entry)
+	if !ok {
+		return Entry{}, ErrInvalidEntry
+	}
 
 	f.logger.WithContext(newContextWithSpan).
 		WithField(flamingo.LogKeyCategory, "httpcache").
 		Debugf("Store entry in Cache for key: %s", key)
 	_ = f.backend.Set(key, entry)
 
-	return entry, err
+	return entry, nil
 }

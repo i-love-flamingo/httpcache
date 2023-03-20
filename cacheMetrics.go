@@ -34,12 +34,13 @@ type (
 	}
 )
 
-// NewCacheMetrics creates an backend metrics helper instance
+// NewCacheMetrics creates a backend metrics helper instance
 func NewCacheMetrics(backendType string, frontendName string) Metrics {
 	b := Metrics{
 		backendType:  backendType,
 		frontendName: frontendName,
 	}
+
 	return b
 }
 
@@ -53,6 +54,7 @@ func init() {
 	); err != nil {
 		panic(err)
 	}
+
 	if err := opencensus.View(
 		"flamingo/httpcache/backend/miss",
 		backendCacheMissCount,
@@ -62,6 +64,7 @@ func init() {
 	); err != nil {
 		panic(err)
 	}
+
 	if err := opencensus.View(
 		"flamingo/httpcache/backend/error",
 		backendCacheErrorCount,
@@ -72,6 +75,7 @@ func init() {
 	); err != nil {
 		panic(err)
 	}
+
 	if err := opencensus.View(
 		"flamingo/httpcache/backend/entries",
 		backendCacheEntriesCount,

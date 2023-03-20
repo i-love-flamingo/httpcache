@@ -7,9 +7,7 @@ import (
 	"time"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"flamingo.me/httpcache"
@@ -22,6 +20,7 @@ var (
 
 func createEntry(t *testing.T, lifeTime, graceTime string, tags []string, header map[string][]string, status string, statusCode int, body string) httpcache.Entry {
 	t.Helper()
+
 	lifeTimeDuration, err := time.ParseDuration(lifeTime)
 	require.NoError(t, err)
 	graceTimeDuration, err := time.ParseDuration(graceTime)
@@ -49,6 +48,7 @@ func TestFrontend_Get(t *testing.T) {
 	type args struct {
 		loader httpcache.HTTPLoader
 	}
+
 	tests := []struct {
 		name             string
 		cacheGetter      func() (httpcache.Entry, bool)
@@ -113,46 +113,46 @@ func TestFrontend_Get(t *testing.T) {
 			wantLoaderCalled: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			wait := make(chan struct{}, 1)
 			loaderCalled := false
 			loader := func(ctx context.Context) (httpcache.Entry, error) {
 				loaderCalled = true
 
-				return tt.args.loader(ctx)
+				return test.args.loader(ctx)
 			}
 
 			backend := new(mocks.Backend)
-			if tt.cacheGetter != nil {
-				backend.On("Get", testKey).Return(tt.cacheGetter())
+			if test.cacheGetter != nil {
+				backend.EXPECT().Get(testKey).Return(test.cacheGetter())
 			}
-			if tt.wantSet != nil {
-				backend.On("Set", testKey, *tt.wantSet).Run(func(_ mock.Arguments) {
+			if test.wantSet != nil {
+				backend.EXPECT().Set(testKey, *test.wantSet).Run(func(key string, entry httpcache.Entry) {
 					wait <- struct{}{}
 				}).Return(nil).Once()
 			} else {
 				close(wait)
 			}
 
-			f := new(httpcache.Frontend).Inject(new(flamingo.NullLogger))
-			f.SetBackend(backend)
+			f := new(httpcache.Frontend).Inject(new(flamingo.NullLogger)).SetBackend(backend)
 			got, err := f.Get(context.Background(), testKey, loader)
 
 			// wait for eventually async cache set to be finished
 			<-wait
 
-			assert.Equal(t, tt.wantLoaderCalled, loaderCalled, "Loader expected to be called: %v, but actually called: %v", tt.wantLoaderCalled, loaderCalled)
+			assert.Equal(t, test.wantLoaderCalled, loaderCalled, "Loader expected to be called: %v, but actually called: %v", test.wantLoaderCalled, loaderCalled)
 
 			backend.AssertExpectations(t)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != test.wantErr {
+				t.Errorf("Get() error = %v, wantErr %v", err, test.wantErr)
 				return
 			}
-			if diff := deep.Equal(got, tt.want); diff != nil {
-				t.Error("expected entry is wrong: ", diff)
-			}
+			assert.Equal(t, test.want, got)
 		})
 	}
 }

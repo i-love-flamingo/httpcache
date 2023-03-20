@@ -2,14 +2,12 @@ package httpcache
 
 import (
 	"flamingo.me/dingo"
-	"flamingo.me/flamingo/v3/framework/config"
 )
 
 type (
 	// Module basic struct
 	Module struct {
 		frontendFactory *FrontendFactory
-		cacheConfig     config.Map
 	}
 )
 
@@ -32,6 +30,7 @@ func (m *Module) Configure(injector *dingo.Injector) {
 
 // CueConfig definition
 func (m *Module) CueConfig() string {
+	// language=cue
 	return `
 // httpcache config
 httpcache: {
