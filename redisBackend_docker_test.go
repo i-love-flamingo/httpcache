@@ -44,10 +44,12 @@ func setup() {
 		WaitingFor:   wait.ForLog("Ready to accept connections"),
 	}
 
-	redisContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	var err error
+	redisContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
