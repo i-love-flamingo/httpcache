@@ -23,7 +23,7 @@ type (
 func (f *Frontend) Inject(
 	logger flamingo.Logger,
 ) *Frontend {
-	f.logger = logger.WithField(flamingo.LogKeyCategory, "httpcache")
+	f.logger = logger
 
 	return f
 }
@@ -46,34 +46,46 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 
 	if entry, ok := f.backend.Get(key); ok {
 		if entry.Meta.LifeTime.After(time.Now()) {
-			f.logger.Debug("Serving from cache: ", key)
+			f.logger.WithContext(ctx).
+				WithField(flamingo.LogKeyCategory, "httpcache").
+				Debug("Serving from cache: ", key)
 			return entry, nil
 		}
 
 		if entry.Meta.GraceTime.After(time.Now()) {
 			// Try to load the actual value in background
-			newContext := trace.NewContext(context.Background(), trace.FromContext(ctx))
 			go func() {
-				_, _ = f.load(newContext, key, loader)
+				_, _ = f.load(ctx, key, loader)
 			}()
 
-			f.logger.Debug("Gracetime! Serving from cache: ", key)
+			f.logger.WithContext(ctx).
+				WithField(flamingo.LogKeyCategory, "httpcache").
+				Debug("Gracetime! Serving from cache: ", key)
 
 			return entry, nil
 		}
 	}
-	f.logger.Debug("no cache entry for: ", key)
+	f.logger.WithContext(ctx).
+		WithField(flamingo.LogKeyCategory, "httpcache").
+		Debug("no cache entry for: ", key)
 
 	return f.load(ctx, key, loader)
 }
 
 func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Entry, error) {
-	ctx, span := trace.StartSpan(ctx, "flamingo/httpcache/load")
+	oldSpan := trace.FromContext(ctx)
+	newContext := trace.NewContext(context.Background(), oldSpan)
+
+	newContextWithSpan, span := trace.StartSpan(newContext, "flamingo/httpcache/load")
+
 	span.Annotate(nil, key)
 	defer span.End()
 
 	data, err := f.Do(key, func() (res interface{}, resultErr error) {
-		ctx, fetchRoutineSpan := trace.StartSpan(ctx, "flamingo/httpcache/fetchRoutine")
+		ctx, fetchRoutineSpan := trace.StartSpan(
+			newContextWithSpan,
+			"flamingo/httpcache/fetchRoutine",
+		)
 		fetchRoutineSpan.Annotate(nil, key)
 		defer fetchRoutineSpan.End()
 
@@ -99,7 +111,9 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 	}
 	entry := data.(Entry)
 
-	f.logger.WithContext(ctx).Debugf("Store entry in Cache for key: %s", key)
+	f.logger.WithContext(newContextWithSpan).
+		WithField(flamingo.LogKeyCategory, "httpcache").
+		Debugf("Store entry in Cache for key: %s", key)
 	_ = f.backend.Set(key, entry)
 
 	return entry, err
