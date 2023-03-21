@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 package httpcache_test
 
@@ -29,12 +28,14 @@ var (
 // TestMain set
 func TestMain(m *testing.M) {
 	setup()
+
 	code := m.Run()
+
 	teardown() // comment out, if you want to keep the docker-instance running for debugging
 	os.Exit(code)
 }
 
-// setup an redis docker-container for integration tests
+// setup the redis docker-container for integration tests
 func setup() {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
@@ -48,6 +49,7 @@ func setup() {
 		ContainerRequest: req,
 		Started:          true,
 	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,6 +67,7 @@ func setup() {
 	}
 
 	address := fmt.Sprintf("%s:%s", redisHost, port.Port())
+
 	conn, err := redis.Dial("tcp", address)
 	if err != nil {
 		log.Fatal(err)
@@ -87,6 +90,8 @@ func teardown() {
 }
 
 func Test_RunDefaultBackendTestCase_RedisBackend(t *testing.T) {
+	t.Parallel()
+
 	config := httpcache.RedisBackendConfig{
 		MaxIdle:            8,
 		IdleTimeOutSeconds: 30,

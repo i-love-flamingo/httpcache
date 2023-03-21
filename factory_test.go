@@ -12,6 +12,8 @@ import (
 )
 
 func TestHTTPFrontendFactory_ConfigUnmarshalling(t *testing.T) {
+	t.Parallel()
+
 	testconfig := config.Map{
 		"one": config.Map{
 			"backendType": "inmemory",
@@ -28,7 +30,8 @@ func TestHTTPFrontendFactory_ConfigUnmarshalling(t *testing.T) {
 	}
 
 	var typedCacheConfig httpcache.FactoryConfig
-	testconfig.MapInto(&typedCacheConfig)
+
+	require.NoError(t, testconfig.MapInto(&typedCacheConfig))
 
 	assert.Contains(t, typedCacheConfig, "one")
 	assert.Contains(t, typedCacheConfig, "two")
@@ -37,15 +40,17 @@ func TestHTTPFrontendFactory_ConfigUnmarshalling(t *testing.T) {
 	assert.Equal(t, "inmemory", one.BackendType)
 	require.NotNil(t, one.Memory)
 	assert.Equal(t, one.Memory.Size, 100)
-
 }
 
 func TestHTTPFrontendFactory_BuildBackend(t *testing.T) {
+	t.Parallel()
+
 	provider := func() *httpcache.Frontend {
 		return new(httpcache.Frontend)
 	}
-	f := &httpcache.FrontendFactory{}
-	f.Inject(
+
+	factory := &httpcache.FrontendFactory{}
+	factory.Inject(
 		provider,
 		new(httpcache.RedisBackendFactory).Inject(new(flamingo.NullLogger)),
 		&httpcache.InMemoryBackendFactory{},
@@ -54,24 +59,27 @@ func TestHTTPFrontendFactory_BuildBackend(t *testing.T) {
 	)
 
 	t.Run("memory", func(t *testing.T) {
+		t.Parallel()
 		testConfig := httpcache.BackendConfig{
 			BackendType: "memory",
 			Memory:      &httpcache.MemoryBackendConfig{Size: 10},
 		}
-		backend, err := f.BuildBackend(testConfig, "test")
+		backend, err := factory.BuildBackend(testConfig, "test")
 		assert.NoError(t, err)
 		assert.IsType(t, &httpcache.MemoryBackend{}, backend)
 	})
 
 	t.Run("inmemory error", func(t *testing.T) {
+		t.Parallel()
 		testConfig := httpcache.BackendConfig{
 			BackendType: "memory",
 		}
-		_, err := f.BuildBackend(testConfig, "test")
+		_, err := factory.BuildBackend(testConfig, "test")
 		assert.Error(t, err)
 	})
 
 	t.Run("redis", func(t *testing.T) {
+		t.Parallel()
 		testConfig := httpcache.BackendConfig{
 			BackendType: "redis",
 			Redis: &httpcache.RedisBackendConfig{
@@ -80,7 +88,7 @@ func TestHTTPFrontendFactory_BuildBackend(t *testing.T) {
 				Port:               "8080",
 			},
 		}
-		backend, err := f.BuildBackend(testConfig, "test")
+		backend, err := factory.BuildBackend(testConfig, "test")
 		assert.NoError(t, err)
 		assert.IsType(t, &httpcache.RedisBackend{}, backend)
 	})

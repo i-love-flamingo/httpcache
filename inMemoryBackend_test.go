@@ -7,6 +7,8 @@ import (
 )
 
 func Test_RunDefaultBackendTestCase_InMemoryBackend(t *testing.T) {
+	t.Parallel()
+
 	f := httpcache.InMemoryBackendFactory{}
 	backend, _ := f.SetConfig(httpcache.MemoryBackendConfig{Size: 100}).SetFrontendName("default").Build()
 

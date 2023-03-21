@@ -20,6 +20,8 @@ func (l *loggerModule) Configure(injector *dingo.Injector) {
 }
 
 func TestModule_Configure(t *testing.T) {
+	t.Parallel()
+
 	if err := config.TryModules(nil, new(loggerModule), new(httpcache.Module)); err != nil {
 		t.Error(err)
 	}

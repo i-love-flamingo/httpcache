@@ -7,6 +7,9 @@ import (
 	"flamingo.me/flamingo/v3/framework/flamingo"
 )
 
+var ErrAllBackendsFailed = errors.New("all backends failed")
+var ErrAtLeastOneBackendFailed = errors.New("at least one backends failed")
+
 type (
 	// TwoLevelBackend the cache backend interface with a two level solution
 	TwoLevelBackend struct {
@@ -63,7 +66,8 @@ func (mb *TwoLevelBackend) Get(key string) (entry Entry, found bool) {
 		go func() {
 			_ = mb.firstBackend.Set(key, entry)
 		}()
-		return entry, found
+
+		return entry, true
 	}
 
 	return Entry{}, false
@@ -76,17 +80,19 @@ func (mb *TwoLevelBackend) Set(key string, entry Entry) error {
 	err := mb.firstBackend.Set(key, entry)
 	if err != nil {
 		errorCount++
+
 		mb.logger.WithField("category", "TwoLevelBackend").Error(fmt.Sprintf("Failed to set key %v with error %v", key, err))
 	}
 
 	err = mb.secondBackend.Set(key, entry)
 	if err != nil {
 		errorCount++
+
 		mb.logger.WithField("category", "TwoLevelBackend").Error(fmt.Sprintf("Failed to set key %v with error %v", key, err))
 	}
 
-	if errorCount >= 2 {
-		return errors.New("all backends failed")
+	if errorCount >= 2 { //nolint:gomnd // there are two backends no need to introduce const for that
+		return ErrAllBackendsFailed
 	}
 
 	return nil
@@ -94,7 +100,7 @@ func (mb *TwoLevelBackend) Set(key string, entry Entry) error {
 
 // Purge entry by key
 func (mb *TwoLevelBackend) Purge(key string) (err error) {
-	errorList := []error{}
+	var errorList []error
 
 	err = mb.firstBackend.Purge(key)
 	if err != nil {
@@ -109,7 +115,7 @@ func (mb *TwoLevelBackend) Purge(key string) (err error) {
 	}
 
 	if 0 != len(errorList) {
-		return fmt.Errorf("Not all backends succeeded to Purge key %v, Errors: %v", key, errorList)
+		return fmt.Errorf("not all backends succeeded to Purge key %v, errors: %v - %w", key, errorList, ErrAtLeastOneBackendFailed)
 	}
 
 	return nil
@@ -117,7 +123,7 @@ func (mb *TwoLevelBackend) Purge(key string) (err error) {
 
 // Flush the whole cache
 func (mb *TwoLevelBackend) Flush() (err error) {
-	errorList := []error{}
+	var errorList []error
 
 	err = mb.firstBackend.Flush()
 	if err != nil {
@@ -132,7 +138,7 @@ func (mb *TwoLevelBackend) Flush() (err error) {
 	}
 
 	if 0 != len(errorList) {
-		return fmt.Errorf("Not all backends succeeded to Flush. Errors: %v", errorList)
+		return fmt.Errorf("not all backends succeeded to Flush. errors: %v - %w", errorList, ErrAtLeastOneBackendFailed)
 	}
 
 	return nil
