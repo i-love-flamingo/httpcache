@@ -55,6 +55,7 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 			f.logger.WithContext(ctx).
 				WithField(flamingo.LogKeyCategory, "httpcache").
 				Debug("Serving from cache: ", key)
+
 			return entry, nil
 		}
 
@@ -123,9 +124,11 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 		return Entry{}, ErrInvalidEntry
 	}
 
+	//nolint:contextcheck // we want to explicitly use the different context here
 	f.logger.WithContext(newContextWithSpan).
 		WithField(flamingo.LogKeyCategory, "httpcache").
 		Debugf("Store entry in Cache for key: %s", key)
+
 	_ = f.backend.Set(key, entry)
 
 	return entry, nil
