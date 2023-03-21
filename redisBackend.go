@@ -47,6 +47,8 @@ const (
 var (
 	redisKeyRegex         = regexp.MustCompile(`[^a-zA-Z0-9]`)
 	_             Backend = new(RedisBackend)
+
+	ErrInvalidRedisConfig = errors.New("invalid redis config")
 )
 
 func init() {
@@ -67,11 +69,11 @@ func (f *RedisBackendFactory) Inject(logger flamingo.Logger) *RedisBackendFactor
 func (f *RedisBackendFactory) Build() (Backend, error) {
 	if f.config != nil {
 		if f.config.IdleTimeOutSeconds <= 0 {
-			return nil, errors.New("IdleTimeOut must be >0")
+			return nil, fmt.Errorf("IdleTimeOut must be >0: %w", ErrInvalidRedisConfig)
 		}
 
 		if f.config.Host == "" || f.config.Port == "" {
-			return nil, errors.New("host and Port must set")
+			return nil, fmt.Errorf("host and port must set: %w", ErrInvalidRedisConfig)
 		}
 
 		f.pool = &redis.Pool{
@@ -79,7 +81,7 @@ func (f *RedisBackendFactory) Build() (Backend, error) {
 			IdleTimeout: time.Second * time.Duration(f.config.IdleTimeOutSeconds),
 			TestOnBorrow: func(c redis.Conn, t time.Time) error {
 				_, err := c.Do("PING")
-				return err
+				return fmt.Errorf("redis PING failed: %w", err)
 			},
 			Dial: func() (redis.Conn, error) {
 				return f.redisConnector(
@@ -92,14 +94,14 @@ func (f *RedisBackendFactory) Build() (Backend, error) {
 		}
 	}
 
-	b := &RedisBackend{
+	redisBackend := &RedisBackend{
 		pool:         f.pool,
 		logger:       f.logger.WithField(flamingo.LogKeyCategory, "Redis"),
 		cacheMetrics: NewCacheMetrics("redis", f.frontendName),
 	}
-	runtime.SetFinalizer(b, finalizer) // close all connections on destruction
+	runtime.SetFinalizer(redisBackend, finalizer) // close all connections on destruction
 
-	return b, nil
+	return redisBackend, nil
 }
 
 // SetFrontendName for redis cache metrics
@@ -120,29 +122,32 @@ func (f *RedisBackendFactory) SetPool(pool *redis.Pool) *RedisBackendFactory {
 	return f
 }
 
-func (f *RedisBackendFactory) redisConnector(network, address, password string, db int) (redis.Conn, error) {
-	c, err := redis.Dial(network, address)
+func (f *RedisBackendFactory) redisConnector(network, address, password string, database int) (redis.Conn, error) {
+	conn, err := redis.Dial(network, address)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("redis dial error: %w", err)
 	}
+
 	if password != "" {
-		if _, err := c.Do("AUTH", password); err != nil {
-			c.Close()
-			return nil, err
+		if _, err := conn.Do("AUTH", password); err != nil {
+			_ = conn.Close()
+			return nil, fmt.Errorf("redis auth error: %w", err)
 		}
 	}
-	if db != 0 {
-		if _, err := c.Do("SELECT", db); err != nil {
-			c.Close()
-			return nil, err
+
+	if database != 0 {
+		if _, err := conn.Do("SELECT", database); err != nil {
+			_ = conn.Close()
+			return nil, fmt.Errorf("redis select db error: %w", err)
 		}
 	}
-	return c, err
+
+	return conn, nil
 }
 
 // Close ensures all redis connections are closed
 func (b *RedisBackend) close() {
-	b.pool.Close()
+	_ = b.pool.Close()
 }
 
 // createPrefixedKey creates a redis-compatible key
@@ -154,17 +159,22 @@ func (b *RedisBackend) createPrefixedKey(key string, prefix string) string {
 // Get a cache key
 func (b *RedisBackend) Get(key string) (entry Entry, found bool) {
 	conn := b.pool.Get()
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		_ = conn.Close()
+	}(conn)
 
 	reply, err := conn.Do("GET", b.createPrefixedKey(key, valuePrefix))
 	if err != nil {
 		b.cacheMetrics.countError(fmt.Sprintf("%v", err))
 		b.logger.Error(fmt.Sprintf("Error getting key '%v': %v", key, err))
+
 		return Entry{}, false
 	}
+
 	if reply == nil {
 		b.cacheMetrics.countMiss()
 		b.logger.Info(fmt.Sprintf("Missed key: %v", key))
+
 		return Entry{}, false
 	}
 
@@ -172,6 +182,7 @@ func (b *RedisBackend) Get(key string) (entry Entry, found bool) {
 	if err != nil {
 		b.cacheMetrics.countError("ByteConvertFailed")
 		b.logger.Error(fmt.Sprintf("Error convert value to bytes of key '%v': %v", key, err))
+
 		return Entry{}, false
 	}
 
@@ -179,22 +190,27 @@ func (b *RedisBackend) Get(key string) (entry Entry, found bool) {
 	if err != nil {
 		b.cacheMetrics.countError("DecodeFailed")
 		b.logger.Error(fmt.Sprintf("Error decoding content of key '%v': %v", key, err))
+
 		return Entry{}, false
 	}
 
 	b.cacheMetrics.countHit()
+
 	return redisEntry, true
 }
 
 // Set a cache key
 func (b *RedisBackend) Set(key string, entry Entry) error {
 	conn := b.pool.Get()
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		_ = conn.Close()
+	}(conn)
 
 	buffer, err := b.encodeEntry(entry)
 	if err != nil {
 		b.cacheMetrics.countError("EncodeFailed")
 		b.logger.Error("Error encoding for key: ", key)
+
 		return err
 	}
 
@@ -207,7 +223,8 @@ func (b *RedisBackend) Set(key string, entry Entry) error {
 	if err != nil {
 		b.cacheMetrics.countError("SetFailed")
 		b.logger.Error("Error setting key %v with timeout %v and buffer %v", key, entry.Meta.GraceTime, buffer)
-		return err
+
+		return fmt.Errorf("redis SETEX failed: %w", err)
 	}
 
 	for _, tag := range entry.Meta.Tags {
@@ -219,29 +236,44 @@ func (b *RedisBackend) Set(key string, entry Entry) error {
 		if err != nil {
 			b.cacheMetrics.countError("SetTagFailed")
 			b.logger.Error("Error setting tag: %v: %v", tag, key)
-			return err
+
+			return fmt.Errorf("redis SADD failed: %w", err)
 		}
 	}
 
-	return conn.Flush()
+	err = conn.Flush()
+	if err != nil {
+		return fmt.Errorf("redis flush failed: %w", err)
+	}
+
+	return nil
 }
 
 // Purge a cache key
 func (b *RedisBackend) Purge(key string) error {
 	conn := b.pool.Get()
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		_ = conn.Close()
+	}(conn)
 
 	_, err := conn.Do("DEL", b.createPrefixedKey(key, valuePrefix))
-	return err
+	if err != nil {
+		return fmt.Errorf("redis DEL failed: %w", err)
+	}
+
+	return nil
 }
 
 // PurgeTags purges all keys+tags by tag(s)
 func (b *RedisBackend) PurgeTags(tags []string) error {
 	conn := b.pool.Get()
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		_ = conn.Close()
+	}(conn)
 
 	for _, tag := range tags {
 		reply, err := conn.Do("SMEMBERS", b.createPrefixedKey(tag, tagPrefix))
+
 		members, err := redis.Strings(reply, err)
 		if err != nil {
 			b.logger.Error(fmt.Sprintf("Failed SMEMBERS for tag '%v': %v", tag, err))
@@ -251,39 +283,57 @@ func (b *RedisBackend) PurgeTags(tags []string) error {
 			_, err = conn.Do("DEL", member)
 			if err != nil {
 				b.logger.Error(fmt.Sprintf("Failed DEL for key '%v': %v", member, err))
-				return err
+
+				return fmt.Errorf("redis DEL failed for key %q: %w", member, err)
 			}
 		}
 
 		_, err = conn.Do("DEL", fmt.Sprintf("%v", tag))
 		if err != nil {
 			b.logger.Error(fmt.Sprintf("Failed DEL for key '%v': %v", tag, err))
-			return err
+
+			return fmt.Errorf("redis DEL failed for key %q: %w", tag, err)
 		}
 	}
-	return conn.Flush()
+
+	err := conn.Flush()
+	if err != nil {
+		return fmt.Errorf("redis flush failed: %w", err)
+	}
+
+	return nil
 }
 
 // Flush the whole cache
 func (b *RedisBackend) Flush() error {
 	conn := b.pool.Get()
-	defer conn.Close()
+	defer func(conn redis.Conn) {
+		_ = conn.Close()
+	}(conn)
 
 	err := conn.Send("FLUSHALL")
 	if err != nil {
 		b.logger.Error(fmt.Sprintf("Failed purge all keys %v", err))
-		return err
+
+		return fmt.Errorf("redis FLUSHALL failed: %w", err)
 	}
 
-	return conn.Flush()
+	err = conn.Flush()
+	if err != nil {
+		return fmt.Errorf("redis flush failed: %w", err)
+	}
+
+	return nil
 }
 
 func (b *RedisBackend) encodeEntry(entry Entry) (*bytes.Buffer, error) {
 	buffer := new(bytes.Buffer)
+
 	err := gob.NewEncoder(buffer).Encode(entry)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gob encode failed: %w", err)
 	}
+
 	return buffer, nil
 }
 
@@ -291,10 +341,11 @@ func (b *RedisBackend) decodeEntry(content []byte) (Entry, error) {
 	buffer := bytes.NewBuffer(content)
 	decoder := gob.NewDecoder(buffer)
 	entry := new(Entry)
+
 	err := decoder.Decode(entry)
 	if err != nil {
-		return *entry, err
+		return *entry, fmt.Errorf("gob decode failed: %w", err)
 	}
 
-	return *entry, err
+	return *entry, nil
 }

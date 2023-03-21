@@ -93,31 +93,33 @@ func (f *FrontendFactory) BuildWithBackend(backend Backend) *Frontend {
 }
 
 // BuildBackend by given BackendConfig and frontendName
-func (f *FrontendFactory) BuildBackend(bc BackendConfig, frontendName string) (Backend, error) {
-	switch bc.BackendType {
+//
+//nolint:cyclop // it is what it is
+func (f *FrontendFactory) BuildBackend(backendConfig BackendConfig, frontendName string) (Backend, error) {
+	switch backendConfig.BackendType {
 	case "redis":
-		if bc.Redis == nil {
+		if backendConfig.Redis == nil {
 			return nil, ErrRedisConfig
 		}
 
-		return f.NewRedisBackend(*bc.Redis, frontendName)
+		return f.NewRedisBackend(*backendConfig.Redis, frontendName)
 	case "memory":
-		if bc.Memory == nil {
+		if backendConfig.Memory == nil {
 			return nil, ErrMemoryConfig
 		}
 
-		return f.NewMemoryBackend(*bc.Memory, frontendName)
+		return f.NewMemoryBackend(*backendConfig.Memory, frontendName)
 	case "twolevel":
-		if bc.Twolevel == nil || bc.Twolevel.First == nil || bc.Twolevel.Second == nil {
+		if backendConfig.Twolevel == nil || backendConfig.Twolevel.First == nil || backendConfig.Twolevel.Second == nil {
 			return nil, ErrTwoLevelConfig
 		}
 
-		first, err := f.BuildBackend(*bc.Twolevel.First, frontendName)
+		first, err := f.BuildBackend(*backendConfig.Twolevel.First, frontendName)
 		if err != nil {
 			return nil, err
 		}
 
-		second, err := f.BuildBackend(*bc.Twolevel.Second, frontendName)
+		second, err := f.BuildBackend(*backendConfig.Twolevel.Second, frontendName)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +127,7 @@ func (f *FrontendFactory) BuildBackend(bc BackendConfig, frontendName string) (B
 		return f.NewTwoLevel(TwoLevelBackendConfig{first, second})
 	}
 
-	return nil, fmt.Errorf("backend type %q error: %w", bc.BackendType, ErrInvalidBackend)
+	return nil, fmt.Errorf("backend type %q error: %w", backendConfig.BackendType, ErrInvalidBackend)
 }
 
 // NewMemoryBackend with given config and name

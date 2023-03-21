@@ -28,6 +28,7 @@ var (
 // TestMain set
 func TestMain(m *testing.M) {
 	setup()
+
 	code := m.Run()
 
 	teardown() // comment out, if you want to keep the docker-instance running for debugging
@@ -43,8 +44,7 @@ func setup() {
 		WaitingFor:   wait.ForLog("Ready to accept connections"),
 	}
 
-	var err error
-	redisContainer, err = testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	redisContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -65,6 +65,7 @@ func setup() {
 	}
 
 	address := fmt.Sprintf("%s:%s", redisHost, port.Port())
+
 	conn, err := redis.Dial("tcp", address)
 	if err != nil {
 		log.Fatal(err)
@@ -87,6 +88,8 @@ func teardown() {
 }
 
 func Test_RunDefaultBackendTestCase_RedisBackend(t *testing.T) {
+	t.Parallel()
+
 	config := httpcache.RedisBackendConfig{
 		MaxIdle:            8,
 		IdleTimeOutSeconds: 30,

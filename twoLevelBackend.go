@@ -8,6 +8,7 @@ import (
 )
 
 var ErrAllBackendsFailed = errors.New("all backends failed")
+var ErrAtLeastOneBackendFailed = errors.New("at least one backends failed")
 
 type (
 	// TwoLevelBackend the cache backend interface with a two level solution
@@ -90,7 +91,7 @@ func (mb *TwoLevelBackend) Set(key string, entry Entry) error {
 		mb.logger.WithField("category", "TwoLevelBackend").Error(fmt.Sprintf("Failed to set key %v with error %v", key, err))
 	}
 
-	if errorCount >= 2 {
+	if errorCount >= 2 { //nolint:gomnd // there are two backends no need to introduce const for that
 		return ErrAllBackendsFailed
 	}
 
@@ -114,7 +115,7 @@ func (mb *TwoLevelBackend) Purge(key string) (err error) {
 	}
 
 	if 0 != len(errorList) {
-		return fmt.Errorf("not all backends succeeded to Purge key %v, Errors: %v", key, errorList)
+		return fmt.Errorf("not all backends succeeded to Purge key %v, errors: %v - %w", key, errorList, ErrAtLeastOneBackendFailed)
 	}
 
 	return nil
@@ -137,7 +138,7 @@ func (mb *TwoLevelBackend) Flush() (err error) {
 	}
 
 	if 0 != len(errorList) {
-		return fmt.Errorf("not all backends succeeded to Flush. errors: %v", errorList)
+		return fmt.Errorf("not all backends succeeded to Flush. errors: %v - %w", errorList, ErrAtLeastOneBackendFailed)
 	}
 
 	return nil
