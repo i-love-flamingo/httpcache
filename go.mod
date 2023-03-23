@@ -6,7 +6,7 @@ require (
 	flamingo.me/dingo v0.2.10
 	flamingo.me/flamingo/v3 v3.5.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-	github.com/gomodule/redigo v1.8.9
+	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/hashicorp/golang-lru v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.2
