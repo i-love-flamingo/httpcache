@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-//go:generate go run github.com/vektra/mockery/v2@v2.21.1 --name Backend --case snake
-//go:generate go run github.com/vektra/mockery/v2@v2.21.1 --name TagSupporting --case snake
+//go:generate go run github.com/vektra/mockery/v2@v2.23.2 --name Backend --case snake
+//go:generate go run github.com/vektra/mockery/v2@v2.23.2 --name TagSupporting --case snake
 
 type (
 	// Backend to persist cache data
