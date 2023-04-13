@@ -7,7 +7,6 @@ require (
 	flamingo.me/flamingo/v3 v3.5.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/gomodule/redigo v1.8.9
-	github.com/hashicorp/golang-lru v0.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.2
