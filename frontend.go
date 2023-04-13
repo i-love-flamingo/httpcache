@@ -75,7 +75,7 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 
 	f.logger.WithContext(ctx).
 		WithField(flamingo.LogKeyCategory, "httpcache").
-		Debug("no cache entry for: ", key)
+		Debug("No cache entry for: ", key)
 
 	return f.load(ctx, key, loader)
 }

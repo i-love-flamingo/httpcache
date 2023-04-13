@@ -173,7 +173,6 @@ func (b *RedisBackend) Get(key string) (entry Entry, found bool) {
 
 	if reply == nil {
 		b.cacheMetrics.countMiss()
-		b.logger.Info(fmt.Sprintf("Missed key: %v", key))
 
 		return Entry{}, false
 	}
