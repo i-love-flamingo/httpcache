@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 const lurkerPeriod = 1 * time.Minute
@@ -13,7 +13,7 @@ type (
 	// MemoryBackend implements the cache backend interface with an "in memory" solution
 	MemoryBackend struct {
 		cacheMetrics Metrics
-		pool         *lru.TwoQueueCache
+		pool         *lru.TwoQueueCache[string, inMemoryCacheEntry]
 	}
 
 	// MemoryBackendConfig config
@@ -49,7 +49,7 @@ func (f *InMemoryBackendFactory) SetFrontendName(frontendName string) *InMemoryB
 
 // Build the instance
 func (f *InMemoryBackendFactory) Build() (Backend, error) {
-	cache, _ := lru.New2Q(f.config.Size)
+	cache, _ := lru.New2Q[string, inMemoryCacheEntry](f.config.Size)
 
 	memoryBackend := &MemoryBackend{
 		pool:         cache,
@@ -62,7 +62,7 @@ func (f *InMemoryBackendFactory) Build() (Backend, error) {
 
 // SetSize creates a new underlying cache of the given size
 func (m *MemoryBackend) SetSize(size int) error {
-	cache, err := lru.New2Q(size)
+	cache, err := lru.New2Q[string, inMemoryCacheEntry](size)
 	if err != nil {
 		return fmt.Errorf("lru cant create new TwoQueueCache: %w", err)
 	}
@@ -82,12 +82,7 @@ func (m *MemoryBackend) Get(key string) (Entry, bool) {
 
 	m.cacheMetrics.countHit()
 
-	inMemoryEntry, ok := entry.(inMemoryCacheEntry)
-	if !ok {
-		return Entry{}, false
-	}
-
-	data, ok := inMemoryEntry.data.(Entry)
+	data, ok := entry.data.(Entry)
 	if !ok {
 		return Entry{}, false
 	}
@@ -124,12 +119,10 @@ func (m *MemoryBackend) lurker() {
 		m.cacheMetrics.recordEntries(int64(m.pool.Len()))
 
 		for _, key := range m.pool.Keys() {
-			item, found := m.pool.Peek(key)
-			if found {
-				if inMemoryEntry, ok := item.(inMemoryCacheEntry); ok && inMemoryEntry.valid.Before(time.Now()) {
-					m.pool.Remove(key)
-					break
-				}
+			entry, found := m.pool.Peek(key)
+			if found && entry.valid.Before(time.Now()) {
+				m.pool.Remove(key)
+				break
 			}
 		}
 	}
