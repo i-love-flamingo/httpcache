@@ -38,6 +38,17 @@ func (f *Frontend) SetBackend(b Backend) *Frontend {
 	return f
 }
 
+func (f *Frontend) Purge(ctx context.Context, key string) error {
+	if f.backend == nil {
+		return errors.New("no backend defined")
+	}
+
+	ctx, span := trace.StartSpan(ctx, "flamingo/httpcache/purge")
+	span.Annotate(nil, key)
+
+	return f.backend.Purge(key)
+}
+
 // Get the cached response if possible or perform a call to loader
 // The result of loader will be returned and cached
 func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entry, error) {
