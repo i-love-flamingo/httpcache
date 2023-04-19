@@ -43,10 +43,13 @@ func (f *Frontend) Purge(ctx context.Context, key string) error {
 		return errors.New("no backend defined")
 	}
 
-	ctx, span := trace.StartSpan(ctx, "flamingo/httpcache/purge")
+	_, span := trace.StartSpan(ctx, "flamingo/httpcache/purge")
+
 	span.Annotate(nil, key)
 
-	return f.backend.Purge(key)
+	err := f.backend.Purge(key)
+
+	return fmt.Errorf("failed to purge with key: %s: %w", key, err)
 }
 
 // Get the cached response if possible or perform a call to loader
