@@ -48,8 +48,11 @@ func (f *Frontend) Purge(ctx context.Context, key string) error {
 	span.Annotate(nil, key)
 
 	err := f.backend.Purge(key)
+	if err != nil {
+		return fmt.Errorf("failed to purge with key: %s: %w", key, err)
+	}
 
-	return fmt.Errorf("failed to purge with key: %s: %w", key, err)
+	return nil
 }
 
 // Get the cached response if possible or perform a call to loader
