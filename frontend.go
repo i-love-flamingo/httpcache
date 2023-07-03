@@ -130,7 +130,7 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 			return nil, err
 		}
 
-		f.logger.WithContext(newContextWithSpan).
+		f.logger.WithContext(ctx).
 			WithField(flamingo.LogKeyCategory, "httpcache").
 			Debugf("Store entry in Cache for key: %s", key)
 
