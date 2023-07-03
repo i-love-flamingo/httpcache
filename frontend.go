@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"github.com/golang/groupcache/singleflight"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+	"golang.org/x/sync/singleflight"
 )
 
 var ErrInvalidEntry = errors.New("cache returned invalid entry type")
@@ -107,11 +107,8 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 
 	defer span.End()
 
-	data, err := f.Do(key, func() (res interface{}, resultErr error) {
-		ctx, fetchRoutineSpan := trace.StartSpan(
-			newContextWithSpan,
-			"flamingo/httpcache/fetchRoutine",
-		)
+	data, err, _ := f.Do(key, func() (res interface{}, resultErr error) {
+		ctx, fetchRoutineSpan := trace.StartSpan(newContextWithSpan, "flamingo/httpcache/fetchRoutine")
 		fetchRoutineSpan.Annotate(nil, key)
 		defer fetchRoutineSpan.End()
 
@@ -130,6 +127,16 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 			return nil, err
 		}
 
+		ctx, setSpan := trace.StartSpan(ctx, "flamingo/httpcache/set")
+
+		setSpan.Annotate(nil, key)
+		defer setSpan.End()
+
+		f.logger.WithContext(ctx).WithField(flamingo.LogKeyCategory, "httpcache").
+			Debugf("Store entry in Cache for key: %s", key)
+
+		_ = f.backend.Set(key, entry)
+
 		return entry, err
 	})
 	if err != nil {
@@ -140,13 +147,6 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 	if !ok {
 		return Entry{}, ErrInvalidEntry
 	}
-
-	//nolint:contextcheck // we want to explicitly use the different context here
-	f.logger.WithContext(newContextWithSpan).
-		WithField(flamingo.LogKeyCategory, "httpcache").
-		Debugf("Store entry in Cache for key: %s", key)
-
-	_ = f.backend.Set(key, entry)
 
 	return entry, nil
 }
