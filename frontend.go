@@ -127,7 +127,7 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 			return nil, err
 		}
 
-		ctx, setSpan := trace.StartSpan(newContextWithSpan, "flamingo/httpcache/set")
+		ctx, setSpan := trace.StartSpan(ctx, "flamingo/httpcache/set")
 
 		setSpan.Annotate(nil, key)
 		defer setSpan.End()
