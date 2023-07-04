@@ -46,6 +46,7 @@ func (f *Frontend) Purge(ctx context.Context, key string) error {
 	_, span := trace.StartSpan(ctx, "flamingo/httpcache/purge")
 
 	span.Annotate(nil, key)
+	defer span.End()
 
 	err := f.backend.Purge(key)
 	if err != nil {
