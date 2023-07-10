@@ -1,4 +1,12 @@
-inpackage: False
-testonly: False
-with-expecter: True
-keeptree: False
+inpackage: false
+testonly: false
+keeptree: true
+with-expecter: true
+mockname: "{{.InterfaceName}}"
+filename: "{{.InterfaceNameSnake}}.go"
+outpkg: mocks
+packages:
+  "flamingo.me/httpcache":
+    interfaces:
+      Backend:
+      TagSupporting:
