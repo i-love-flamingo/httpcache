@@ -1,10 +1,19 @@
-inpackage: false
 testonly: false
-keeptree: true
 with-expecter: true
+# less changes in update pull requests
+disable-version-string: true
+# generate mocks in seperate package
+inpackage: false
+# Use original interface name as mock name, we use a dedicated mock package to make the context clear
 mockname: "{{.InterfaceName}}"
+# snake case file names
 filename: "{{.InterfaceNameSnake}}.go"
-outpkg: mocks
+# place all mocks in the mocks package
+outpkg: "mocks"
+# all mocks in a single folder without sub folders per package
+dir: "mocks"
+
+# mocks to generate
 packages:
   "flamingo.me/httpcache":
     interfaces:
