@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"flamingo.me/flamingo/v3/core/healthcheck/domain/healthcheck"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"flamingo.me/httpcache"
@@ -44,6 +46,10 @@ func (tc *BackendTestCase) RunTests() {
 
 	if _, ok := tc.backend.(httpcache.TagSupporting); ok {
 		tc.testPurgeTags()
+	}
+
+	if _, ok := tc.backend.(healthcheck.Status); ok {
+		tc.testHealthcheck()
 	}
 }
 
@@ -102,6 +108,17 @@ func (tc *BackendTestCase) testPurgeTags() {
 	tc.shouldNotExist("ONE_KEY")
 	tc.shouldNotExist("ANOTHERKEY_KEY")
 	tc.shouldExist("THIRD_KEY")
+}
+
+func (tc *BackendTestCase) testHealthcheck() {
+	health, ok := tc.backend.(healthcheck.Status)
+	if !ok {
+		tc.t.Fatalf("backend doesnt implement healthcheck.Status interface")
+	}
+
+	alive, details := health.Status()
+	assert.True(tc.t, alive)
+	assert.Equal(tc.t, "", details)
 }
 
 func (tc *BackendTestCase) setEntry(key string, entry httpcache.Entry) {

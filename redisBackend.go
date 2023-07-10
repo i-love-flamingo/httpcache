@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"time"
 
+	"flamingo.me/flamingo/v3/core/healthcheck/domain/healthcheck"
 	"github.com/gomodule/redigo/redis"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
@@ -45,8 +46,10 @@ const (
 )
 
 var (
-	redisKeyRegex         = regexp.MustCompile(`[^a-zA-Z0-9]`)
-	_             Backend = new(RedisBackend)
+	_ Backend            = new(RedisBackend)
+	_ healthcheck.Status = new(RedisBackend)
+
+	redisKeyRegex = regexp.MustCompile(`[^a-zA-Z0-9]`)
 
 	ErrInvalidRedisConfig = errors.New("invalid redis config")
 )
@@ -208,7 +211,7 @@ func (b *RedisBackend) Set(key string, entry Entry) error {
 	buffer, err := b.encodeEntry(entry)
 	if err != nil {
 		b.cacheMetrics.countError("EncodeFailed")
-		b.logger.Error("Error encoding for key: ", key)
+		b.logger.Error(fmt.Sprintf("Error encoding entry for key: %q", key))
 
 		return err
 	}
@@ -221,7 +224,7 @@ func (b *RedisBackend) Set(key string, entry Entry) error {
 	)
 	if err != nil {
 		b.cacheMetrics.countError("SetFailed")
-		b.logger.Error("Error setting key %v with timeout %v and buffer %v", key, entry.Meta.GraceTime, buffer)
+		b.logger.Error(fmt.Sprintf("Error setting key %q with timeout %v and buffer %v", key, entry.Meta.GraceTime, buffer))
 
 		return fmt.Errorf("redis SETEX failed: %w", err)
 	}
@@ -234,7 +237,7 @@ func (b *RedisBackend) Set(key string, entry Entry) error {
 		)
 		if err != nil {
 			b.cacheMetrics.countError("SetTagFailed")
-			b.logger.Error("Error setting tag: %v: %v", tag, key)
+			b.logger.Error(fmt.Sprintf("Error setting tag: %q on key %q", tag, key))
 
 			return fmt.Errorf("redis SADD failed: %w", err)
 		}
@@ -347,4 +350,14 @@ func (b *RedisBackend) decodeEntry(content []byte) (Entry, error) {
 	}
 
 	return *entry, nil
+}
+
+// Status checks the health of the used redis instance
+func (b *RedisBackend) Status() (bool, string) {
+	_, err := b.pool.Get().Do("PING")
+	if err != nil {
+		return false, fmt.Sprintf("redis PING failed: %q", err.Error())
+	}
+
+	return true, ""
 }
