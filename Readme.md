@@ -6,7 +6,7 @@
 
 The httpcache module provides an easy interface to cache simple http results in Flamingo.
 
-The basic concept is, that there is a so called "cache frontend" - that offers an interface to cache certain types, 
+The basic concept is, that there is a so-called "cache frontend" - that offers an interface to cache certain types, 
 and a "cache backend" that takes care about storing(persisting) the cache entry.
 
 ## Caching HTTP responses from APIs
@@ -29,7 +29,7 @@ injector.Bind((*Frontend)(nil)).AnnotatedWith("myservice").ToInstance(&Frontend{
 
 ## Cache backends
 
-Currently there are the following backends available:
+Currently, there are the following backends available:
 
 ### memory
 
@@ -39,17 +39,17 @@ It is base on the LRU-Strategy witch drops least used entries. For this reason t
 
 ### redis
 
-Is using [redis](https://redis.io/) as an shared inMemory cache.
+Is using [redis](https://redis.io/) as a shared inMemory cache.
 Since all cache-fetched has an overhead to the inMemoryBackend, the redis is a little slower.
-The benefit of redis is the shared storage an the high efficiency in reading and writing keys. Especially if you need scale fast horizontally, it helps to keep your backend-systems healthy.
+The benefit of redis is the shared storage and the high efficiency in reading and writing keys. Especially if you need scale fast horizontally, it helps to keep your backend-systems healthy.
 
-Be ware of using redis (or any other shared cache backend) as a single backend, because of network latency. (have a look at the twoLevelBackend)
+Be aware of using redis (or any other shared cache backend) as a single backend, because of network latency. (have a look at the twoLevelBackend)
 
 
 ### twoLevel
 
 The twoLevelBackend was introduced to get the benefit of the extreme fast memory backend and a shared backend.
-Using the inMemoryBackend in combination with an shared backend, gives you blazing fast responses and helps you to protect your backend in case of fast scaleout-scenarios.
+Using the inMemoryBackend in combination with a shared backend, gives you blazing fast responses and helps you to protect your backend in case of fast scaleout-scenarios.
 
 
 ## Using Cache Factory
@@ -90,3 +90,11 @@ httpcache:
 ```
 
 See `CueConfig` function in module.go for the complete config specification.
+
+Afterward you can use the cache frontend:
+
+```go
+type MyApiClient struct {
+      Cache  *httpcache.Frontend  `inject:"CACHENAME"`
+}
+```

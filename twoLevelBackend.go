@@ -4,11 +4,17 @@ import (
 	"errors"
 	"fmt"
 
+	"flamingo.me/flamingo/v3/core/healthcheck/domain/healthcheck"
 	"flamingo.me/flamingo/v3/framework/flamingo"
 )
 
-var ErrAllBackendsFailed = errors.New("all backends failed")
-var ErrAtLeastOneBackendFailed = errors.New("at least one backends failed")
+var (
+	_ Backend            = new(TwoLevelBackend)
+	_ healthcheck.Status = new(TwoLevelBackend)
+
+	ErrAllBackendsFailed       = errors.New("all backends failed")
+	ErrAtLeastOneBackendFailed = errors.New("at least one backends failed")
+)
 
 type (
 	// TwoLevelBackend the cache backend interface with a two level solution
@@ -30,8 +36,6 @@ type (
 		config TwoLevelBackendConfig
 	}
 )
-
-var _ Backend = new(TwoLevelBackend)
 
 // Inject dependencies
 func (f *TwoLevelBackendFactory) Inject(logger flamingo.Logger) *TwoLevelBackendFactory {
@@ -142,4 +146,28 @@ func (mb *TwoLevelBackend) Flush() (err error) {
 	}
 
 	return nil
+}
+
+// Status checks the health of the used backends
+func (mb *TwoLevelBackend) Status() (bool, string) {
+	healthy := true
+	details := ""
+
+	if firstHealth, ok := mb.firstBackend.(healthcheck.Status); ok {
+		alive, notes := firstHealth.Status()
+		if !alive {
+			healthy = false
+			details += fmt.Sprintf("first backend: %s", notes)
+		}
+	}
+
+	if secondHealth, ok := mb.secondBackend.(healthcheck.Status); ok {
+		alive, notes := secondHealth.Status()
+		if !alive {
+			healthy = false
+			details += fmt.Sprintf("second backend: %s", notes)
+		}
+	}
+
+	return healthy, details
 }

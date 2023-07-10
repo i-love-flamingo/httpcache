@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"flamingo.me/dingo"
+	"flamingo.me/flamingo/v3/core/healthcheck/domain/healthcheck"
 	"flamingo.me/flamingo/v3/framework/config"
 )
 
@@ -78,13 +79,18 @@ func (f *FrontendFactory) BindConfiguredCaches(injector *dingo.Injector) error {
 			return err
 		}
 
-		injector.Bind((*Frontend)(nil)).AnnotatedWith(cacheName).ToInstance(f.BuildWithBackend(backend))
+		frontend := f.BuildWithBackend(backend)
+		injector.Bind((*Frontend)(nil)).AnnotatedWith(cacheName).ToInstance(frontend)
+
+		if health, ok := backend.(healthcheck.Status); ok {
+			injector.BindMap(new(healthcheck.Status), "httpcache_"+cacheName).ToInstance(health)
+		}
 	}
 
 	return nil
 }
 
-// BuildWithBackend - returns new HTTPFrontend cache with given backend
+// BuildWithBackend returns new HTTPFrontend cache with given backend
 func (f *FrontendFactory) BuildWithBackend(backend Backend) *Frontend {
 	frontend := f.provider()
 	frontend.backend = backend
