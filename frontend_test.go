@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
+	"flamingo.me/httpcache/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"flamingo.me/httpcache"
-	"flamingo.me/httpcache/mocks"
 )
 
 var (
