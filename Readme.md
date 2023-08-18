@@ -4,7 +4,7 @@
 [![GoDoc](https://godoc.org/github.com/i-love-flamingo/httpcache?status.svg)](https://godoc.org/github.com/i-love-flamingo/httpcache)
 [![Tests](https://github.com/i-love-flamingo/httpcache/workflows/Tests/badge.svg?branch=master)](https://github.com/i-love-flamingo/httpcache/actions?query=branch%3Amaster+workflow%3ATests)
 
-The httpcache module provides an easy interface to cache simple http results in Flamingo.
+The HTTPCache module provides an easy interface to cache simple HTTP results in Flamingo.
 
 The basic concept is, that there is a so-called "cache frontend" - that offers an interface to cache certain types, 
 and a "cache backend" that takes care about storing(persisting) the cache entry.
@@ -13,31 +13,102 @@ and a "cache backend" that takes care about storing(persisting) the cache entry.
 
 A typical use case is, to cache responses from (slow) APIs that you need to call.
 
-First define an injection to get a Frontend cache injected:
-
-```go
-type MyApiClient struct {
-      Cache  *httpcache.Frontend  `inject:"myservice"`
-}
+First, add the dependency to your project:
+```bash
+go get flamingo.me/httpcache
 ```
 
-We use annotation to be able to individually configure the requested Cache. So our binding may look like:
+For an easy start the module ships with a cache frontend factory, we'll configure a frontend that relies on an in-memory backend.
+The name of the frontend will be `myServiceCache` and the cache can store up to 50 entries before dropping the least frequently used.
+
+Add this to your config.yaml:
+```yaml
+httpcache:
+  frontendFactory:
+    myServiceCache:
+      backendType: memory
+      memory:
+        size: 50 // limit of entries
+```
+
+__For a list of all supported cache backends see [the cache backends section](#cache-backends) below.__
+
+Afterward you can use the cache frontend in your API client:
 
 ```go
-injector.Bind((*Frontend)(nil)).AnnotatedWith("myservice").ToInstance(&Frontend{})
+package api
+
+import (
+	"context"
+	"net/http"
+	"time"
+
+	"flamingo.me/httpcache"
+)
+
+type MyApiClient struct {
+	Cache *httpcache.Frontend `inject:"myServiceCache"`
+}
+
+type Result struct{}
+
+func (m *MyApiClient) Operation(ctx context.Context) (*Result, error) {
+	cacheEntry, err := m.Cache.Get(ctx, "operation-cache-key", m.doApiCall(ctx, "https://example.com/v1/operation"))
+	if err != nil {
+		return nil, err
+	}
+
+	// unmarshall cacheEntry.Body map to Result struct
+	_ = cacheEntry.Body
+
+	return nil, nil
+}
+
+func (m *MyApiClient) doApiCall(ctx context.Context, endpoint string) httpcache.HTTPLoader {
+	return func(ctx context.Context) (httpcache.Entry, error) {
+		// grab http client with timeout
+		// call endpoint
+		_ = endpoint
+
+		return httpcache.Entry{
+			Meta: httpcache.Meta{
+				LifeTime:  time.Now().Add(5 * time.Minute),
+				GraceTime: time.Now().Add(10 * time.Minute),
+				Tags:      nil,
+			},
+			Body:       []byte{}, // API Response that should be cached
+			StatusCode: http.StatusOK,
+		}, nil
+	}
+}
+
 ```
 
 ## Cache backends
 
 Currently, there are the following backends available:
 
-### memory
+### In memory
+
+`backendType: memory`
 
 Caches in memory - and therefore is a very fast cache.
 
-It is base on the LRU-Strategy witch drops least used entries. For this reason the cache will be no over-commit your memory and will atomically fit the need of your current traffic.
+It is base on the LRU-Strategy witch drops the least used entries. For this reason the cache will be no over-commit your memory and will atomically fit the need of your current traffic.
 
-### redis
+Example config:
+```yaml
+httpcache:
+  frontendFactory:
+    myServiceCache:
+      backendType: memory
+      memory:
+        size: 200 // limit of entries
+```
+
+### Redis
+
+`backendType: redis`
 
 Is using [redis](https://redis.io/) as a shared inMemory cache.
 Since all cache-fetched has an overhead to the inMemoryBackend, the redis is a little slower.
@@ -45,32 +116,28 @@ The benefit of redis is the shared storage and the high efficiency in reading an
 
 Be aware of using redis (or any other shared cache backend) as a single backend, because of network latency. (have a look at the twoLevelBackend)
 
-
-### twoLevel
-
-The twoLevelBackend was introduced to get the benefit of the extreme fast memory backend and a shared backend.
-Using the inMemoryBackend in combination with a shared backend, gives you blazing fast responses and helps you to protect your backend in case of fast scaleout-scenarios.
-
-
-## Using Cache Factory
-
-To automatically bind a Frontend for a cache "CACHENAME" you can use the cache.Module and configure the factory:
-
 ```yaml
 httpcache:
   frontendFactory:
-    CACHENAME:
-      backendType: memory
-      memory:
-        size: 200
+    myServiceCache:
+      backendType: redis
+      redis:
+        host: '%%ENV:REDISHOST%%localhost%%'
+        port: '6379'
 ```
 
-Or to configure a TwoLevel Cache:
+### Two Level
 
+`backendType: twolevel`
+
+The two level backend was introduced to get the benefit of the extreme fast memory backend and a shared backend.
+Using the inMemoryBackend in combination with a shared backend, gives you blazing fast responses and helps you to protect your backend in case of fast scaleout-scenarios.
+
+Example config using the frontend cache factory:
 ```yaml
 httpcache:
   frontendFactory:
-    CACHENAME:
+    myServiceCache:
       backendType: twolevel
       twolevel:
         first:
@@ -89,12 +156,42 @@ httpcache:
             maxIdle: 8
 ```
 
-See `CueConfig` function in module.go for the complete config specification.
+### Implement custom cache backend
 
-Afterward you can use the cache frontend:
+If you are missing a cache backend feel free to open a issue or pull request.
+It's of course possible to implement a custom cache backend in your project, see example below:
 
 ```go
-type MyApiClient struct {
-      Cache  *httpcache.Frontend  `inject:"CACHENAME"`
+package cache_backend
+
+import (
+	"flamingo.me/dingo"
+	"flamingo.me/httpcache"
+)
+
+type Module struct {
+	provider httpcache.FrontendProvider
+}
+
+type CustomBackend struct {
+	// implement logic
+}
+
+var _ httpcache.Backend = new(CustomBackend)
+
+// Inject dependencies
+func (m *Module) Inject(
+	provider httpcache.FrontendProvider,
+) *Module {
+	m.provider = provider
+	return m
+}
+
+// Configure DI
+func (m *Module) Configure(injector *dingo.Injector) {
+	frontend := m.provider()
+	frontend.SetBackend(&CustomBackend{})
+
+	injector.Bind((*httpcache.Frontend)(nil)).AnnotatedWith("myServiceWithCustomBackend").ToInstance(frontend)
 }
 ```
