@@ -16,7 +16,7 @@ jobs:
         go: [ '1.19', '1.*' ]
     name: Tests
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -32,7 +32,7 @@ jobs:
         go: [ '1.*' ]
     name: Integration
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -48,7 +48,7 @@ jobs:
         go: [ '1.*' ]
     name: Coverage Report
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -85,7 +85,7 @@ jobs:
         go: [ '1.*' ]
     name: Static checks
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
