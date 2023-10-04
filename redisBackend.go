@@ -217,10 +217,11 @@ func (b *RedisBackend) Set(key string, entry Entry) error {
 	}
 
 	err = conn.Send(
-		"SETEX",
+		"SET",
 		b.createPrefixedKey(key, valuePrefix),
-		int(entry.Meta.GraceTime.Sub(time.Now().Round(time.Second))),
 		buffer,
+		"EX",
+		int(entry.Meta.GraceTime.Sub(time.Now()).Round(time.Second).Seconds()),
 	)
 	if err != nil {
 		b.cacheMetrics.countError("SetFailed")

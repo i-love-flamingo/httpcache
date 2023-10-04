@@ -7,13 +7,14 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 )
 
-const lurkerPeriod = 1 * time.Minute
+const defaultLurkerPeriod = 1 * time.Minute
 
 type (
 	// MemoryBackend implements the cache backend interface with an "in memory" solution
 	MemoryBackend struct {
 		cacheMetrics Metrics
 		pool         *lru.TwoQueueCache[string, inMemoryCacheEntry]
+		lurkerPeriod time.Duration
 	}
 
 	// MemoryBackendConfig config
@@ -25,6 +26,7 @@ type (
 	InMemoryBackendFactory struct {
 		config       MemoryBackendConfig
 		frontendName string
+		lurkerPeriod time.Duration
 	}
 
 	inMemoryCacheEntry struct {
@@ -41,6 +43,12 @@ func (f *InMemoryBackendFactory) SetConfig(config MemoryBackendConfig) *InMemory
 	return f
 }
 
+// SetLurkerPeriod sets the timeframe how often expired cache entries should be checked/cleaned up, if 0 is provided the default period of 1 minute is taken
+func (f *InMemoryBackendFactory) SetLurkerPeriod(period time.Duration) *InMemoryBackendFactory {
+	f.lurkerPeriod = period
+	return f
+}
+
 // SetFrontendName used in Metrics
 func (f *InMemoryBackendFactory) SetFrontendName(frontendName string) *InMemoryBackendFactory {
 	f.frontendName = frontendName
@@ -51,10 +59,17 @@ func (f *InMemoryBackendFactory) SetFrontendName(frontendName string) *InMemoryB
 func (f *InMemoryBackendFactory) Build() (Backend, error) {
 	cache, _ := lru.New2Q[string, inMemoryCacheEntry](f.config.Size)
 
+	lurkerPeriod := defaultLurkerPeriod
+	if f.lurkerPeriod > 0 {
+		lurkerPeriod = f.lurkerPeriod
+	}
+
 	memoryBackend := &MemoryBackend{
 		pool:         cache,
 		cacheMetrics: NewCacheMetrics("memory", f.frontendName),
+		lurkerPeriod: lurkerPeriod,
 	}
+
 	go memoryBackend.lurker()
 
 	return memoryBackend, nil
@@ -115,7 +130,7 @@ func (m *MemoryBackend) Flush() error {
 }
 
 func (m *MemoryBackend) lurker() {
-	for range time.Tick(lurkerPeriod) {
+	for range time.Tick(m.lurkerPeriod) {
 		m.cacheMetrics.recordEntries(int64(m.pool.Len()))
 
 		for _, key := range m.pool.Keys() {
