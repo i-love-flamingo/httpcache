@@ -183,9 +183,9 @@ func (tc *BackendTestCase) buildEntry(content string, tags []string) httpcache.E
 
 func (tc *BackendTestCase) testSetTTL() {
 	entry := tc.buildEntry("expires quickly", nil)
-	entry.Meta.GraceTime = time.Now().Add(600 * time.Millisecond)
+	entry.Meta.GraceTime = time.Now().Add(200 * time.Millisecond)
 	entry.Meta.LifeTime = entry.Meta.GraceTime
 	tc.setEntry("EXPIRED_ENTRY", entry)
-	time.Sleep(1 * time.Second)
+	time.Sleep(300 * time.Millisecond)
 	tc.shouldNotExist("EXPIRED_ENTRY")
 }
