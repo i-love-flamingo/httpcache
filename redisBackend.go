@@ -217,16 +217,17 @@ func (b *RedisBackend) Set(key string, entry Entry) error {
 	}
 
 	err = conn.Send(
-		"SETEX",
+		"SET",
 		b.createPrefixedKey(key, valuePrefix),
-		int(entry.Meta.GraceTime.Sub(time.Now().Round(time.Second))),
 		buffer,
+		"PX",
+		time.Until(entry.Meta.GraceTime).Round(time.Millisecond).Milliseconds(),
 	)
 	if err != nil {
 		b.cacheMetrics.countError("SetFailed")
 		b.logger.Error(fmt.Sprintf("Error setting key %q with timeout %v and buffer %v", key, entry.Meta.GraceTime, buffer))
 
-		return fmt.Errorf("redis SETEX failed: %w", err)
+		return fmt.Errorf("redis SET PX failed: %w", err)
 	}
 
 	for _, tag := range entry.Meta.Tags {

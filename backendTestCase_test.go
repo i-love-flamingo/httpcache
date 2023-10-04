@@ -42,6 +42,8 @@ func NewBackendTestCase(t *testing.T, backend httpcache.Backend, tagsInResult bo
 func (tc *BackendTestCase) RunTests() {
 	tc.testSetGetPurge()
 
+	tc.testSetTTL()
+
 	tc.testFlush()
 
 	if _, ok := tc.backend.(httpcache.TagSupporting); ok {
@@ -177,4 +179,13 @@ func (tc *BackendTestCase) buildEntry(content string, tags []string) httpcache.E
 		StatusCode: 0,
 		Body:       []byte(content),
 	}
+}
+
+func (tc *BackendTestCase) testSetTTL() {
+	entry := tc.buildEntry("expires quickly", nil)
+	entry.Meta.GraceTime = time.Now().Add(200 * time.Millisecond)
+	entry.Meta.LifeTime = entry.Meta.GraceTime
+	tc.setEntry("EXPIRED_ENTRY", entry)
+	time.Sleep(300 * time.Millisecond)
+	tc.shouldNotExist("EXPIRED_ENTRY")
 }

@@ -2,6 +2,7 @@ package httpcache_test
 
 import (
 	"testing"
+	"time"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
 	"github.com/stretchr/testify/assert"
@@ -12,7 +13,7 @@ import (
 func createInMemoryBackend() httpcache.Backend {
 	return func() httpcache.Backend {
 		f := httpcache.InMemoryBackendFactory{}
-		backend, _ := f.SetConfig(httpcache.MemoryBackendConfig{Size: 100}).SetFrontendName("default").Build()
+		backend, _ := f.SetConfig(httpcache.MemoryBackendConfig{Size: 100}).SetFrontendName("default").SetLurkerPeriod(100 * time.Millisecond).Build()
 
 		return backend
 	}()
