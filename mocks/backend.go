@@ -24,6 +24,10 @@ func (_m *Backend) EXPECT() *Backend_Expecter {
 func (_m *Backend) Flush() error {
 	ret := _m.Called()
 
+	if len(ret) == 0 {
+		panic("no return value specified for Flush")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
 		r0 = rf()
@@ -64,6 +68,10 @@ func (_c *Backend_Flush_Call) RunAndReturn(run func() error) *Backend_Flush_Call
 // Get provides a mock function with given fields: key
 func (_m *Backend) Get(key string) (httpcache.Entry, bool) {
 	ret := _m.Called(key)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Get")
+	}
 
 	var r0 httpcache.Entry
 	var r1 bool
@@ -117,6 +125,10 @@ func (_c *Backend_Get_Call) RunAndReturn(run func(string) (httpcache.Entry, bool
 func (_m *Backend) Purge(key string) error {
 	ret := _m.Called(key)
 
+	if len(ret) == 0 {
+		panic("no return value specified for Purge")
+	}
+
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string) error); ok {
 		r0 = rf(key)
@@ -158,6 +170,10 @@ func (_c *Backend_Purge_Call) RunAndReturn(run func(string) error) *Backend_Purg
 // Set provides a mock function with given fields: key, entry
 func (_m *Backend) Set(key string, entry httpcache.Entry) error {
 	ret := _m.Called(key, entry)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Set")
+	}
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, httpcache.Entry) error); ok {
