@@ -1,5 +1,17 @@
 # Changelog
 
+## Version v0.3.3 (2024-03-12)
+
+### Chores and tidying
+
+- **deps:** update module github.com/testcontainers/testcontainers-go to v0.29.1 (#68) (5493f251)
+- switch to MIT licensing to streamline with other flamingo modules (#72) (d543ecc4)
+- **deps:** update module github.com/stretchr/testify to v1.9.0 (#70) (b06ce82a)
+- **deps:** update module github.com/gomodule/redigo to v1.9.2 (#69) (06ee66d8)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.8.0 (#65) (cbd10c13)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.42.0 (#66) (595968e1)
+- **deps:** update golangci/golangci-lint-action action to v4 (#67) (1d42d9ce)
+
 ## Version v0.3.2 (2024-02-06)
 
 ### Ops and CI/CD
