@@ -1,5 +1,11 @@
 # Changelog
 
+## Version v0.3.4 (2024-03-21)
+
+### Chores and tidying
+
+- **deps:** update module github.com/vektra/mockery/v2 to v2.42.1 (#75) (5b580e78)
+
 ## Version v0.3.3 (2024-03-12)
 
 ### Chores and tidying
