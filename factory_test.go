@@ -60,10 +60,12 @@ func TestHTTPFrontendFactory_BuildBackend(t *testing.T) {
 
 	t.Run("memory", func(t *testing.T) {
 		t.Parallel()
+
 		testConfig := httpcache.BackendConfig{
 			BackendType: "memory",
 			Memory:      &httpcache.MemoryBackendConfig{Size: 10},
 		}
+
 		backend, err := factory.BuildBackend(testConfig, "test")
 		assert.NoError(t, err)
 		assert.IsType(t, &httpcache.MemoryBackend{}, backend)
@@ -71,15 +73,18 @@ func TestHTTPFrontendFactory_BuildBackend(t *testing.T) {
 
 	t.Run("inmemory error", func(t *testing.T) {
 		t.Parallel()
+
 		testConfig := httpcache.BackendConfig{
 			BackendType: "memory",
 		}
+
 		_, err := factory.BuildBackend(testConfig, "test")
 		assert.Error(t, err)
 	})
 
 	t.Run("redis", func(t *testing.T) {
 		t.Parallel()
+
 		testConfig := httpcache.BackendConfig{
 			BackendType: "redis",
 			Redis: &httpcache.RedisBackendConfig{
@@ -88,6 +93,7 @@ func TestHTTPFrontendFactory_BuildBackend(t *testing.T) {
 				Port:               "8080",
 			},
 		}
+
 		backend, err := factory.BuildBackend(testConfig, "test")
 		assert.NoError(t, err)
 		assert.IsType(t, &httpcache.RedisBackend{}, backend)
