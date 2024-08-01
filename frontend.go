@@ -122,7 +122,7 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 					return
 				}
 
-				resultErr = fmt.Errorf("HTTPCache Frontend.load exception: %#v", err)
+				resultErr = fmt.Errorf("HTTPCache Frontend.load exception: %#v", err) //nolint:err113 // no dedicated error needed here
 			}
 		}()
 
