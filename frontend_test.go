@@ -118,6 +118,7 @@ func TestFrontend_Get(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
 			wait := make(chan struct{}, 1)
 			loaderCalled := false
 			loader := func(ctx context.Context) (httpcache.Entry, error) {
@@ -127,9 +128,11 @@ func TestFrontend_Get(t *testing.T) {
 			}
 
 			backend := new(mocks.Backend)
+
 			if test.cacheGetter != nil {
 				backend.EXPECT().Get(testKey).Return(test.cacheGetter())
 			}
+
 			if test.wantSet != nil {
 				backend.EXPECT().Set(testKey, *test.wantSet).Run(func(key string, entry httpcache.Entry) {
 					wait <- struct{}{}
@@ -150,8 +153,10 @@ func TestFrontend_Get(t *testing.T) {
 
 			if (err != nil) != test.wantErr {
 				t.Errorf("Get() error = %v, wantErr %v", err, test.wantErr)
+
 				return
 			}
+
 			assert.Equal(t, test.want, got)
 		})
 	}

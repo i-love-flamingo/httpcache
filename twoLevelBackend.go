@@ -95,7 +95,7 @@ func (mb *TwoLevelBackend) Set(key string, entry Entry) error {
 		mb.logger.WithField("category", "TwoLevelBackend").Error(fmt.Sprintf("Failed to set key %v with error %v", key, err))
 	}
 
-	if errorCount >= 2 { //nolint:gomnd // there are two backends no need to introduce const for that
+	if errorCount >= 2 { //nolint:mnd // there are two backends no need to introduce const for that
 		return ErrAllBackendsFailed
 	}
 

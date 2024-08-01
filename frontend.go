@@ -12,6 +12,7 @@ import (
 )
 
 var ErrInvalidEntry = errors.New("cache returned invalid entry type")
+var ErrNoCacheBackend = errors.New("no backend defined")
 
 type (
 	// Frontend caches and delivers HTTP responses
@@ -40,7 +41,7 @@ func (f *Frontend) SetBackend(b Backend) *Frontend {
 
 func (f *Frontend) Purge(ctx context.Context, key string) error {
 	if f.backend == nil {
-		return errors.New("no backend defined")
+		return ErrNoCacheBackend
 	}
 
 	_, span := trace.StartSpan(ctx, "flamingo/httpcache/purge")
@@ -60,7 +61,7 @@ func (f *Frontend) Purge(ctx context.Context, key string) error {
 // The result of loader will be returned and cached
 func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entry, error) {
 	if f.backend == nil {
-		return Entry{}, errors.New("no backend defined")
+		return Entry{}, ErrNoCacheBackend
 	}
 
 	ctx, span := trace.StartSpan(ctx, "flamingo/httpcache/get")
@@ -98,7 +99,7 @@ func (f *Frontend) Get(ctx context.Context, key string, loader HTTPLoader) (Entr
 	return f.load(ctx, key, loader)
 }
 
-func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Entry, error) {
+func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Entry, error) { //nolint:contextcheck // this is fine
 	oldSpan := trace.FromContext(ctx)
 	newContext := trace.NewContext(context.Background(), oldSpan)
 
