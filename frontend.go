@@ -2,11 +2,11 @@ package httpcache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"golang.org/x/sync/singleflight"
 )
@@ -115,12 +115,14 @@ func (f *Frontend) load(ctx context.Context, key string, loader HTTPLoader) (Ent
 		defer fetchRoutineSpan.End()
 
 		defer func() {
+			// catch potential panics
 			if err := recover(); err != nil {
-				if err2, ok := err.(error); ok {
-					resultErr = errors.WithStack(err2)
-				} else {
-					resultErr = errors.WithStack(errors.Errorf("HTTPCache Frontend.load exception: %#v", err))
+				if typedError, ok := err.(error); ok {
+					resultErr = typedError
+					return
 				}
+
+				resultErr = fmt.Errorf("HTTPCache Frontend.load exception: %#v", err) //nolint:err113 // no dedicated error needed here
 			}
 		}()
 
