@@ -164,7 +164,6 @@ func TestFrontend_Get(t *testing.T) {
 	}
 }
 
-//nolint:bodyclose // response might be nil so we cannot close the body
 func TestContextDeadlineExceeded(t *testing.T) {
 	t.Parallel()
 
@@ -223,7 +222,11 @@ func loaderWithWaitingTime(ctx context.Context) (httpcache.Entry, error) {
 	}
 
 	client := &http.Client{}
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
+
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
 
 	if err != nil {
 		return httpcache.Entry{}, err
