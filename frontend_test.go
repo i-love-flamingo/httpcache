@@ -3,13 +3,16 @@ package httpcache_test
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"flamingo.me/flamingo/v3/framework/flamingo"
-	"flamingo.me/httpcache/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"flamingo.me/httpcache/mocks"
 
 	"flamingo.me/httpcache"
 )
@@ -159,4 +162,82 @@ func TestFrontend_Get(t *testing.T) {
 			assert.Equal(t, test.want, got)
 		})
 	}
+}
+
+//nolint:bodyclose // response might be nil so we cannot close the body
+func TestContextDeadlineExceeded(t *testing.T) {
+	t.Parallel()
+
+	t.Run("exceeded, throw error", func(t *testing.T) {
+		t.Parallel()
+
+		backend := new(mocks.Backend)
+
+		backend.EXPECT().Get(testKey).Return(func() (httpcache.Entry, bool) { return httpcache.Entry{}, false }())
+
+		backend.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
+
+		contextWithDeadline, cancel := context.WithDeadline(context.Background(), time.Now().Add(4*time.Second))
+		t.Cleanup(cancel)
+
+		f := new(httpcache.Frontend).Inject(new(flamingo.NullLogger)).SetBackend(backend)
+		got, err := f.Get(contextWithDeadline, testKey, loaderWithWaitingTime)
+
+		assert.ErrorIs(t, err, context.DeadlineExceeded)
+		assert.Equal(t, httpcache.Entry{}, got)
+	})
+
+	t.Run("did not exceed, no error", func(t *testing.T) {
+		t.Parallel()
+
+		backend := new(mocks.Backend)
+
+		backend.EXPECT().Get(testKey).Return(func() (httpcache.Entry, bool) { return httpcache.Entry{}, false }())
+
+		backend.EXPECT().Set(mock.Anything, mock.Anything).Return(nil)
+
+		contextWithDeadline, cancel := context.WithDeadline(context.Background(), time.Now().Add(6*time.Second))
+		t.Cleanup(cancel)
+
+		f := new(httpcache.Frontend).Inject(new(flamingo.NullLogger)).SetBackend(backend)
+		got, err := f.Get(contextWithDeadline, testKey, loaderWithWaitingTime)
+
+		assert.NoError(t, err)
+		assert.Equal(t, []byte("body"), got.Body)
+	})
+}
+
+func loaderWithWaitingTime(ctx context.Context) (httpcache.Entry, error) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(5 * time.Second)
+		w.WriteHeader(http.StatusOK)
+
+		_, _ = w.Write([]byte("Test 123"))
+	}))
+
+	defer server.Close()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, nil)
+	if err != nil {
+		return httpcache.Entry{}, err
+	}
+
+	client := &http.Client{}
+	_, err = client.Do(req)
+
+	if err != nil {
+		return httpcache.Entry{}, err
+	}
+
+	return httpcache.Entry{
+		Meta: httpcache.Meta{
+			LifeTime:  time.Now().Add(10),
+			GraceTime: time.Now().Add(15),
+			Tags:      nil,
+		},
+		Header:     nil,
+		Status:     "200 OK",
+		StatusCode: http.StatusOK,
+		Body:       []byte("body"),
+	}, nil
 }
