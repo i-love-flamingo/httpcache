@@ -1,5 +1,21 @@
 # Changelog
 
+## Version v0.3.5 (2024-09-18)
+
+### Fixes
+
+- **load:** pass deadline to the loader in context (#101) (ba58a0ac)
+
+### Chores and tidying
+
+- **deps:** update dependency go to v1.23.1 (#93) (ec072342)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.10.1 (#99) (ddd5c3ee)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.46.0 (#100) (aeba6ae5)
+- bump minimum Go version to 1.22 (#98) (e2b612ac)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.10.0 (#97) (5912a72c)
+- **deps:** update module github.com/testcontainers/testcontainers-go to v0.33.0 (#95) (887e0729)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.45.0 (#94) (15450b0c)
+
 ## Version v0.3.4 (2024-08-06)
 
 ### Documentation
