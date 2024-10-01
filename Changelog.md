@@ -1,5 +1,12 @@
 # Changelog
 
+## Version v0.3.6 (2024-10-01)
+
+### Chores and tidying
+
+- **deps:** update module github.com/vektra/mockery/v2 to v2.46.1 (#104) (f38e4de1)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.11.0 (#102) (231d94fc)
+
 ## Version v0.3.5 (2024-09-18)
 
 ### Fixes
