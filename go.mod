@@ -2,7 +2,7 @@ module flamingo.me/httpcache
 
 go 1.22
 
-toolchain go1.23.1
+toolchain go1.23.2
 
 require (
 	flamingo.me/dingo v0.2.10
