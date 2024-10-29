@@ -1,5 +1,15 @@
 # Changelog
 
+## Version v0.3.6 (2024-10-29)
+
+### Chores and tidying
+
+- **deps:** update module github.com/testcontainers/testcontainers-go to v0.34.0 (#107) (25f25ff5)
+- **deps:** update dependency go to v1.23.2 (#105) (8074b54e)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.46.3 (#106) (e9695b7e)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.46.1 (#104) (f38e4de1)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.11.0 (#102) (231d94fc)
+
 ## Version v0.3.5 (2024-09-18)
 
 ### Fixes
