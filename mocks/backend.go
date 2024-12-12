@@ -20,7 +20,7 @@ func (_m *Backend) EXPECT() *Backend_Expecter {
 	return &Backend_Expecter{mock: &_m.Mock}
 }
 
-// Flush provides a mock function with given fields:
+// Flush provides a mock function with no fields
 func (_m *Backend) Flush() error {
 	ret := _m.Called()
 
