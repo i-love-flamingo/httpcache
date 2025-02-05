@@ -39,9 +39,11 @@ func TestMain(m *testing.M) {
 func setup() {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "redis:latest",
+		Image:        "valkey/valkey:7",
 		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor:   wait.ForLog("Ready to accept connections"),
+		WaitingFor: wait.ForAll(
+			wait.ForLog("Ready to accept connections"),
+			wait.ForListeningPort("6379/tcp")),
 	}
 
 	var err error
