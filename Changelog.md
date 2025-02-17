@@ -1,5 +1,26 @@
 # Changelog
 
+## Version v0.4.0 (2025-02-17)
+
+### Features
+
+- **309774:** replace Redis container images with Valkey (#119) (cb60630d)
+
+### Chores and tidying
+
+- **deps:** update module github.com/testcontainers/testcontainers-go to v0.35.0 (#115) (d9732717)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.13.0 (#114) (d140c972)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.50.4 (#113) (0d5ef208)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.50.0 (#110) (27d8f168)
+- **deps:** update dependency go to v1.23.4 (#108) (0362c4d7)
+- **deps:** update module golang.org/x/sync to v0.10.0 (#109) (a0c6d298)
+- **deps:** update module flamingo.me/dingo to v0.3.0 (#112) (2a3be960)
+- **deps:** update module github.com/testcontainers/testcontainers-go to v0.34.0 (#107) (25f25ff5)
+- **deps:** update dependency go to v1.23.2 (#105) (8074b54e)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.46.3 (#106) (e9695b7e)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.46.1 (#104) (f38e4de1)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.11.0 (#102) (231d94fc)
+
 ## Version v0.3.5 (2024-09-18)
 
 ### Fixes
