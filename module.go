@@ -4,7 +4,7 @@ import (
 	"flamingo.me/dingo"
 )
 
-//go:generate go run github.com/vektra/mockery/v2@v2.50.4
+//go:generate go run github.com/vektra/mockery/v2@v2.52.2
 
 type (
 	// Module basic struct
