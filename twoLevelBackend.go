@@ -118,7 +118,7 @@ func (mb *TwoLevelBackend) Purge(key string) (err error) {
 		mb.logger.WithField("category", "TwoLevelBackend").Error(fmt.Sprintf("Failed Purge with error %v", err))
 	}
 
-	if 0 != len(errorList) {
+	if len(errorList) != 0 {
 		return fmt.Errorf("not all backends succeeded to Purge key %v, errors: %v - %w", key, errorList, ErrAtLeastOneBackendFailed)
 	}
 
@@ -141,7 +141,7 @@ func (mb *TwoLevelBackend) Flush() (err error) {
 		mb.logger.WithField("category", "TwoLevelBackend").Error(fmt.Sprintf("Failed Flush error %v", err))
 	}
 
-	if 0 != len(errorList) {
+	if len(errorList) != 0 {
 		return fmt.Errorf("not all backends succeeded to Flush. errors: %v - %w", errorList, ErrAtLeastOneBackendFailed)
 	}
 
