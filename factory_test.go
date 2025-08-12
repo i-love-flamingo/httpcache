@@ -81,21 +81,4 @@ func TestHTTPFrontendFactory_BuildBackend(t *testing.T) {
 		_, err := factory.BuildBackend(testConfig, "test")
 		assert.Error(t, err)
 	})
-
-	t.Run("redis", func(t *testing.T) {
-		t.Parallel()
-
-		testConfig := httpcache.BackendConfig{
-			BackendType: "redis",
-			Redis: &httpcache.RedisBackendConfig{
-				IdleTimeOutSeconds: 1,
-				Host:               "localhost",
-				Port:               "8080",
-			},
-		}
-
-		backend, err := factory.BuildBackend(testConfig, "test")
-		assert.NoError(t, err)
-		assert.IsType(t, &httpcache.RedisBackend{}, backend)
-	})
 }

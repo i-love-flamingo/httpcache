@@ -41,6 +41,10 @@ httpcache: {
 		redis: {
 			host:               string | *"localhost"
 			port:               string | *"6379"
+			username?:          string !=""
+			password?:          string !=""
+			tls?:               bool
+			database?:          number
 			idleTimeOutSeconds: int | float | *60
 			maxIdle:            int | float | *8
 		}
