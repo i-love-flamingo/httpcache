@@ -1,19 +1,13 @@
 # mock might needed in all places
-testonly: false
-# for better usability of the mocks
-with-expecter: true
-# less changes in update pull requests
-disable-version-string: true
-# generate mocks in seperate package
-inpackage: false
 # use original interface name as name, we use a dedicated `mocks` package to make the context clear
-mockname: "{{.InterfaceName}}"
+structname: "{{.InterfaceName}}"
 # snake case file names
-filename: "{{.InterfaceNameSnake}}.go"
+filename: "{{.InterfaceName | snakecase}}.go"
 # place all mocks in the mocks package
-outpkg: "mocks"
-# all mocks in a single folder without sub folders per package
-dir: "mocks"
+pkgname: "mocks"
+# all mocks should live near their interfaces
+dir: "{{.InterfaceDirRelative}}/mocks"
+template: testify
 
 # mocks to generate
 packages:
