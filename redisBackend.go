@@ -37,6 +37,10 @@ type (
 		IdleTimeOutSeconds int
 		Host               string
 		Port               string
+		Username           string
+		Password           string
+		Database           int
+		TLS                bool
 	}
 )
 
@@ -52,6 +56,7 @@ var (
 	redisKeyRegex = regexp.MustCompile(`[^a-zA-Z0-9]`)
 
 	ErrInvalidRedisConfig = errors.New("invalid redis config")
+	ErrEmptyRedisConfig   = errors.New("empty redis config")
 )
 
 func init() {
@@ -70,31 +75,51 @@ func (f *RedisBackendFactory) Inject(logger flamingo.Logger) *RedisBackendFactor
 
 // Build a new redis backend
 func (f *RedisBackendFactory) Build() (Backend, error) {
-	if f.config != nil {
-		if f.config.IdleTimeOutSeconds <= 0 {
-			return nil, fmt.Errorf("IdleTimeOut must be >0: %w", ErrInvalidRedisConfig)
-		}
+	if f.config == nil {
+		return nil, ErrEmptyRedisConfig
+	}
 
-		if f.config.Host == "" || f.config.Port == "" {
-			return nil, fmt.Errorf("host and port must set: %w", ErrInvalidRedisConfig)
-		}
+	if f.config.IdleTimeOutSeconds <= 0 {
+		return nil, fmt.Errorf("IdleTimeOut must be >0: %w", ErrInvalidRedisConfig)
+	}
 
-		f.pool = &redis.Pool{
-			MaxIdle:     f.config.MaxIdle,
-			IdleTimeout: time.Second * time.Duration(f.config.IdleTimeOutSeconds),
-			TestOnBorrow: func(c redis.Conn, t time.Time) error {
-				_, err := c.Do("PING")
-				return fmt.Errorf("redis PING failed: %w", err)
-			},
-			Dial: func() (redis.Conn, error) {
-				return f.redisConnector(
-					"tcp",
-					fmt.Sprintf("%v:%v", f.config.Host, f.config.Port),
-					"",
-					0,
-				)
-			},
-		}
+	if f.config.Host == "" || f.config.Port == "" {
+		return nil, fmt.Errorf("host and port must set: %w", ErrInvalidRedisConfig)
+	}
+
+	options := []redis.DialOption{
+		redis.DialDatabase(f.config.Database),
+	}
+
+	if f.config.Username != "" {
+		options = append(options, redis.DialUsername(f.config.Username))
+	}
+
+	if f.config.Password != "" {
+		options = append(options, redis.DialPassword(f.config.Password))
+	}
+
+	if f.config.TLS {
+		options = append(options, redis.DialUseTLS(f.config.TLS))
+	}
+
+	host := fmt.Sprintf("%v:%v", f.config.Host, f.config.Port)
+
+	f.pool = &redis.Pool{
+		MaxIdle:     f.config.MaxIdle,
+		IdleTimeout: time.Second * time.Duration(f.config.IdleTimeOutSeconds),
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+			_, err := c.Do("PING")
+			return fmt.Errorf("redis PING failed: %w", err)
+		},
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", host, options...)
+		},
+	}
+
+	_, err := f.pool.Get().Do("PING")
+	if err != nil {
+		return nil, fmt.Errorf("%w: initial redis ping failed with: %w", ErrInvalidRedisConfig, err)
 	}
 
 	redisBackend := &RedisBackend{
@@ -123,29 +148,6 @@ func (f *RedisBackendFactory) SetConfig(config RedisBackendConfig) *RedisBackend
 func (f *RedisBackendFactory) SetPool(pool *redis.Pool) *RedisBackendFactory {
 	f.pool = pool
 	return f
-}
-
-func (f *RedisBackendFactory) redisConnector(network, address, password string, database int) (redis.Conn, error) {
-	conn, err := redis.Dial(network, address)
-	if err != nil {
-		return nil, fmt.Errorf("redis dial error: %w", err)
-	}
-
-	if password != "" {
-		if _, err := conn.Do("AUTH", password); err != nil {
-			_ = conn.Close()
-			return nil, fmt.Errorf("redis auth error: %w", err)
-		}
-	}
-
-	if database != 0 {
-		if _, err := conn.Do("SELECT", database); err != nil {
-			_ = conn.Close()
-			return nil, fmt.Errorf("redis select db error: %w", err)
-		}
-	}
-
-	return conn, nil
 }
 
 // Close ensures all redis connections are closed
