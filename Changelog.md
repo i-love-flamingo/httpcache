@@ -1,5 +1,19 @@
 # Changelog
 
+## Version v0.5.0 (2025-08-12)
+
+### Features
+
+- **redis:** add username, password, tls support for redis (#131) (b8021463)
+
+### Chores and tidying
+
+- **deps:** update module github.com/testcontainers/testcontainers-go to v0.38.0 (#124) (b27cd8b3)
+- **deps:** update module github.com/vektra/mockery/v2 to v3 (#126) (a0dcf5c5)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.16.0 (#128) (3eab989a)
+- migrate golangci-lint to v2 (#129) (52509340)
+- **deps:** update module github.com/vektra/mockery/v2 to v2.53.0 (#116) (28d66ff0)
+
 ## Version v0.4.0 (2025-02-17)
 
 ### Features
