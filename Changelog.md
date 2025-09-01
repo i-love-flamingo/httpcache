@@ -1,5 +1,11 @@
 # Changelog
 
+## Version v0.5.2 (2025-09-01)
+
+### Chores and tidying
+
+- **redis:** cleanup redis connection checkups (#136) (f32156fe)
+
 ## Version v0.5.1 (2025-08-13)
 
 ### Fixes
