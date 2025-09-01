@@ -110,14 +110,22 @@ func (f *RedisBackendFactory) Build() (Backend, error) {
 		IdleTimeout: time.Second * time.Duration(f.config.IdleTimeOutSeconds),
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
 			_, err := c.Do("PING")
-			return fmt.Errorf("redis PING failed: %w", err)
+
+			if err != nil {
+				return fmt.Errorf("redis PING failed: %w", err)
+			}
+
+			return nil
 		},
 		Dial: func() (redis.Conn, error) {
 			return redis.Dial("tcp", host, options...)
 		},
 	}
 
-	_, err := f.pool.Get().Do("PING")
+	conn := f.pool.Get()
+	defer conn.Close()
+
+	_, err := conn.Do("PING")
 	if err != nil {
 		return nil, fmt.Errorf("%w: initial redis ping failed with: %w", ErrInvalidRedisConfig, err)
 	}
