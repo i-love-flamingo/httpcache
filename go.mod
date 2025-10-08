@@ -7,7 +7,7 @@ toolchain go1.24.0
 require (
 	flamingo.me/dingo v0.3.0
 	flamingo.me/flamingo/v3 v3.16.0
-	github.com/gomodule/redigo v1.9.2
+	github.com/gomodule/redigo v1.9.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.38.0
