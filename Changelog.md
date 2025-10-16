@@ -1,5 +1,11 @@
 # Changelog
 
+## Version v0.5.4 (2025-10-16)
+
+### Chores and tidying
+
+- **config:** migrate config renovate.json (#144) (78731fc7)
+
 ## Version v0.5.3 (2025-10-16)
 
 ### Chores and tidying
