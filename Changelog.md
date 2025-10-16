@@ -1,5 +1,16 @@
 # Changelog
 
+## Version v0.5.3 (2025-10-16)
+
+### Chores and tidying
+
+- **deps:** update actions/setup-go action to v6 (#138) (9587770e)
+- **deps:** update actions/checkout action to v5 (#130) (33395ce1)
+- **deps:** update module github.com/vektra/mockery/v3 to v3.5.5 (#134) (ca836a43)
+- **deps:** update module flamingo.me/flamingo/v3 to v3.17.0 (#140) (cd3265a0)
+- **deps:** update module github.com/testcontainers/testcontainers-go to v0.39.0 (#141) (139c7b69)
+- **deps:** update module github.com/gomodule/redigo to v1.9.3 (#142) (8f59f243)
+
 ## Version v0.5.2 (2025-09-01)
 
 ### Chores and tidying
