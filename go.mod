@@ -1,6 +1,6 @@
 module flamingo.me/httpcache
 
-go 1.24.0
+go 1.25.0
 
 require (
 	flamingo.me/dingo v0.3.0
@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.39.0
 	go.opencensus.io v0.24.0
-	golang.org/x/sync v0.17.0
+	golang.org/x/sync v0.22.0
 )
 
 require (
