@@ -1,5 +1,16 @@
 # Changelog
 
+## Version v0.5.4 (2026-09-22)
+
+### Chores and tidying
+
+- **deps:** update actions/checkout action to v7 (#154) (c5a4c65a)
+- **deps:** update golangci/golangci-lint-action action to v9 (#147) (98a3dce3)
+- **deps:** update marocchino/sticky-pull-request-comment action to v3 (#153) (5cbd03e6)
+- **deps:** update module github.com/stretchr/testify to v1.12.1 (#157) (27395a92)
+- **deps:** update actions/setup-go action to v7 (#156) (487cb3b3)
+- **config:** migrate config renovate.json (#144) (78731fc7)
+
 ## Version v0.5.3 (2025-10-16)
 
 ### Chores and tidying
