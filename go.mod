@@ -1,9 +1,9 @@
 module flamingo.me/httpcache
 
-go 1.24.0
+go 1.25.8
 
 require (
-	flamingo.me/dingo v0.3.0
+	flamingo.me/dingo v0.4.1
 	flamingo.me/flamingo/v3 v3.17.0
 	github.com/gomodule/redigo v1.9.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
@@ -102,6 +102,7 @@ require (
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
+	gonum.org/v1/gonum v0.17.0 // indirect
 	google.golang.org/api v0.152.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.67.0 // indirect
