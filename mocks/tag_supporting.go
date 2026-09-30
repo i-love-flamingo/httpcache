@@ -14,10 +14,19 @@ func NewTagSupporting(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *TagSupporting {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &TagSupporting{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -59,7 +68,7 @@ type TagSupporting_PurgeTags_Call struct {
 
 // PurgeTags is a helper method to define mock.On call
 //   - tags []string
-func (_e *TagSupporting_Expecter) PurgeTags(tags interface{}) *TagSupporting_PurgeTags_Call {
+func (_e *TagSupporting_Expecter) PurgeTags(tags any) *TagSupporting_PurgeTags_Call {
 	return &TagSupporting_PurgeTags_Call{Call: _e.mock.On("PurgeTags", tags)}
 }
 
