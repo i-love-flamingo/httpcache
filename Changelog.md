@@ -1,5 +1,24 @@
 # Changelog
 
+## Version v0.5.4 (2026-10-02)
+
+### Fixes
+
+- **deps:** patch vulnerable modules and scan with govulncheck (#149) (65cc928b)
+
+### Chores and tidying
+
+- **deps:** update module flamingo.me/flamingo/v3 to v3.17.4 (#151) (072c823b)
+- **deps:** update module github.com/testcontainers/testcontainers-go to v0.44.0 (#146) (b7265886)
+- update dingo and run integration tests on go.mod and 1.* (#155) (e93a0806)
+- update x/sync and align CI job names (#148) (bc588b1e)
+- **deps:** update actions/checkout action to v7 (#154) (c5a4c65a)
+- **deps:** update golangci/golangci-lint-action action to v9 (#147) (98a3dce3)
+- **deps:** update marocchino/sticky-pull-request-comment action to v3 (#153) (5cbd03e6)
+- **deps:** update module github.com/stretchr/testify to v1.12.1 (#157) (27395a92)
+- **deps:** update actions/setup-go action to v7 (#156) (487cb3b3)
+- **config:** migrate config renovate.json (#144) (78731fc7)
+
 ## Version v0.5.3 (2025-10-16)
 
 ### Chores and tidying
