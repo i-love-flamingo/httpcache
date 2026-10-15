@@ -1,5 +1,11 @@
 # Changelog
 
+## Version v0.5.5 (2026-10-15)
+
+### Chores and tidying
+
+- consolidate renovate config (#161) (0d5a7786)
+
 ## Version v0.5.4 (2026-10-02)
 
 ### Fixes
